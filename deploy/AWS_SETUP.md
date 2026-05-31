@@ -71,7 +71,7 @@ On réutilise l'utilisateur existant **`django`** (groupe `www-data`) — pas de
 nouvel utilisateur à créer.
 ```bash
 sudo mkdir -p /opt/foxugly/backend/media && sudo chown -R django:www-data /opt/foxugly
-sudo apt-get install -y python3-venv libnginx-mod-brotli
+sudo apt-get install -y python3-venv
 ```
 
 ## 7. Premier déploiement (bootstrap)
