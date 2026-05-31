@@ -5,8 +5,8 @@ name: Déploiement
 #
 # Secrets requis (Settings → Secrets and variables → Actions) :
 #   AWS_DEPLOY_ROLE_ARN  rôle IAM assumé par OIDC (ssm:SendCommand, ssm:GetCommandInvocation)
-#   AWS_REGION           ex : eu-west-3
 #   EC2_INSTANCE_ID      ex : i-0123456789abcdef0
+#   AWS_REGION           optionnel (défaut : eu-west-1)
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION || 'eu-west-1' }}
 
       - name: Lancer le déploiement via SSM
         env:
