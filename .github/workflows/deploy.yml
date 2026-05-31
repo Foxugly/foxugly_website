@@ -166,6 +166,7 @@ jobs:
           cat > ssm-params.json <<JSON
           { "commands": [
             "set -euo pipefail",
+            "export AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_CONFIG_FILE=/dev/null",
             "aws s3 cp s3://$BUCKET/builds/$BUNDLE /tmp/$BUNDLE --region $AWS_REGION",
             "mkdir -p /opt/foxugly",
             "tar xzf /tmp/$BUNDLE -C /opt/foxugly",

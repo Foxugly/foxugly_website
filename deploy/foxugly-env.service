@@ -18,6 +18,10 @@ RemainAfterExit=yes
 Group=www-data
 RuntimeDirectory=foxugly
 RuntimeDirectoryMode=0750
+# Force le RÔLE D'INSTANCE pour aws (ignore d'éventuelles creds par défaut
+# type certbot-route53 dans /root/.aws) → accès SSM/KMS via le rôle EC2.
+Environment=AWS_SHARED_CREDENTIALS_FILE=/dev/null
+Environment=AWS_CONFIG_FILE=/dev/null
 ExecStart=/usr/bin/bash -c '\
   umask 027; \
   aws ssm get-parameters-by-path --region eu-west-1 --path /foxugly/prod/ \
