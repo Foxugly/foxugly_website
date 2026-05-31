@@ -33,7 +33,8 @@ export function renderBlockHtml(block: Block): string {
       const title = i >= 0
         ? `${esc(t.slice(0, i))}<span class="hl">${esc(hi)}</span>${esc(t.slice(i + hi.length))}`
         : esc(t);
-      const cards = (Array.isArray(c.cards) && c.cards.length ? c.cards : [
+      // Liste vide = cartes masquées ; fallback seulement si `cards` indéfini.
+      const cards = (Array.isArray(c.cards) ? c.cards : [
         { icon: '🚀', label: 'Time-to-market', value: '−40 %' },
         { icon: '🤝', label: 'Équipes coachées', value: '+120 squads' },
         { icon: '📈', label: 'Satisfaction', value: '4,9 / 5' },

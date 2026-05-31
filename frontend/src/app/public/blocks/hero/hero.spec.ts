@@ -19,4 +19,17 @@ describe('Hero', () => {
     expect(h.before).toBe('Titre simple');
     expect(h.after).toBe('');
   });
+
+  it('masque les cartes quand la liste est explicitement vide', () => {
+    expect(heroWith({ cards: [] }).cards).toEqual([]);
+  });
+
+  it('utilise le fallback seulement si la clé cards est absente', () => {
+    expect(heroWith({}).cards.length).toBe(3);
+  });
+
+  it('respecte les cartes définies (max 3)', () => {
+    const cards = [{ icon: '🚀', label: 'A', value: '1' }, { icon: '🤝', label: 'B', value: '2' }];
+    expect(heroWith({ cards }).cards).toEqual(cards);
+  });
 });

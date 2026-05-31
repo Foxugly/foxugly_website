@@ -46,10 +46,12 @@ export class Hero {
   @Input({ required: true }) block!: Block;
   get c() { return this.block.content; }
 
-  /** Cartes flottantes du visuel — éditables via `content.cards`. */
+  /** Cartes flottantes du visuel — éditables via `content.cards`.
+   *  Une liste explicitement vide masque les cartes ; le fallback ne sert
+   *  que si la clé `cards` n'a jamais été définie. */
   get cards() {
     const c = this.c?.cards;
-    return Array.isArray(c) && c.length ? c.slice(0, 3) : DEFAULT_CARDS;
+    return Array.isArray(c) ? c.slice(0, 3) : DEFAULT_CARDS;
   }
 
   /** Découpe le titre autour de la sous-chaîne `highlight` (colorée en vert). */
