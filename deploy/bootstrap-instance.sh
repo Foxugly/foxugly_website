@@ -40,8 +40,10 @@ INNER
 systemctl enable --now foxugly              # Gunicorn :8004
 
 echo "== nginx =="
-cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly
-ln -sf /etc/nginx/sites-available/foxugly /etc/nginx/sites-enabled/foxugly
+# conf.d : inclus par tous les nginx (contrairement à sites-enabled, absent des
+# builds nginx.org). Le vhost foxugly y coexiste avec quizonline.
+cp /opt/foxugly/deploy/nginx.conf /etc/nginx/conf.d/foxugly.conf
+rm -f /etc/nginx/sites-enabled/foxugly /etc/nginx/sites-available/foxugly
 nginx -t && systemctl reload nginx
 
 echo
