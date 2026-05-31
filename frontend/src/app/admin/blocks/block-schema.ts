@@ -27,6 +27,14 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
     { key: 'text', label: 'Texte', kind: 'textarea' },
     cta('primary_cta', 'Bouton principal'),
     cta('secondary_cta', 'Bouton secondaire'),
+    {
+      key: 'cards', label: 'Cartes flottantes (visuel)', kind: 'list-obj', addLabel: 'Ajouter une carte',
+      fields: [
+        { key: 'icon', label: 'Icône (emoji)', kind: 'text' },
+        { key: 'label', label: 'Libellé', kind: 'text' },
+        { key: 'value', label: 'Valeur', kind: 'text' },
+      ],
+    },
   ],
   page_hero: [
     { key: 'badge', label: 'Badge', kind: 'text' },
@@ -130,6 +138,10 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
     { key: 'title', label: 'Titre', kind: 'text' },
     { key: 'lead', label: 'Accroche', kind: 'textarea' },
   ],
+  contact_info: [
+    { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
+    { key: 'title', label: 'Titre', kind: 'text' },
+  ],
 };
 
 /** Libellés lisibles des types de blocs (pour le sélecteur « + bloc »). */
@@ -148,6 +160,7 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   partner_list: 'Liste clients / associations',
   cta: 'Appel à l’action',
   contact_form: 'Formulaire de contact',
+  contact_info: 'Coordonnées',
 };
 
 /** Construit un `content` vide conforme au schéma (pour un nouveau bloc). */

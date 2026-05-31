@@ -45,7 +45,7 @@ export interface Block {
 export type BlockType =
   | 'hero' | 'page_hero' | 'richtext' | 'stats' | 'cards' | 'timeline'
   | 'accordion' | 'testimonials' | 'logo_wall' | 'news_list'
-  | 'project_list' | 'partner_list' | 'cta' | 'contact_form';
+  | 'project_list' | 'partner_list' | 'cta' | 'contact_form' | 'contact_info';
 
 export interface ContactPayload {
   name: string;
@@ -107,6 +107,10 @@ export interface SiteSettings {
   brand_name: string;
   tagline: string;
   contact_email: string;
+  phone: string;
+  address: string;
+  vat_number: string;
+  bank_account: string;
   linkedin_url: string;
   footer_text: string;
 }

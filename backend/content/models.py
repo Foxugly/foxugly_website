@@ -22,6 +22,10 @@ class SiteSettings(models.Model):
     tagline = models.CharField("Accroche", max_length=200, blank=True,
                                default="Coaching agile indépendant")
     contact_email = models.EmailField("Email de contact", default="contact@foxugly.com")
+    phone = models.CharField("Téléphone", max_length=40, blank=True)
+    address = models.TextField("Adresse", blank=True)
+    vat_number = models.CharField("Numéro de TVA", max_length=40, blank=True)
+    bank_account = models.CharField("Numéro de compte (IBAN)", max_length=60, blank=True)
     linkedin_url = models.URLField("LinkedIn", blank=True)
     footer_text = models.TextField(
         "Texte du pied de page", blank=True,
@@ -83,6 +87,7 @@ class Block(models.Model):
         PARTNER_LIST = "partner_list", "Liste clients / associations"
         CTA = "cta", "Appel à l'action"
         CONTACT_FORM = "contact_form", "Formulaire de contact"
+        CONTACT_INFO = "contact_info", "Coordonnées (adresse, TVA, compte…)"
 
     page = models.ForeignKey(Page, related_name="blocks", on_delete=models.CASCADE)
     block_type = models.CharField("Type de bloc", max_length=30, choices=Type.choices)

@@ -19,7 +19,7 @@ import { ContentService } from '../../core/content.service';
           @for (p of (pages$ | async); track p.slug) {
             <a [routerLink]="['/', p.slug]" routerLinkActive="active" (click)="close()">{{ p.nav_label || p.title }}</a>
           }
-          <a routerLink="/accueil" fragment="contact" class="btn btn-primary nav-cta" (click)="close()">Me contacter</a>
+          <a routerLink="/contact" class="btn btn-primary nav-cta" (click)="close()">Me contacter</a>
         </div>
 
         <button class="nav-burger" type="button" aria-label="Menu" (click)="toggle()">☰</button>

@@ -23,8 +23,21 @@ import { SiteSettings } from '../../core/models';
         <div class="form-grid cols-2">
           <div class="field"><label>Email de contact</label>
             <input type="email" [ngModel]="s.contact_email" (ngModelChange)="s.contact_email = $event" /></div>
+          <div class="field"><label>Téléphone</label>
+            <input [ngModel]="s.phone" (ngModelChange)="s.phone = $event" /></div>
+        </div>
+        <div class="field"><label>Adresse</label>
+          <textarea rows="2" [ngModel]="s.address" (ngModelChange)="s.address = $event"></textarea></div>
+        <div class="form-grid cols-2">
+          <div class="field"><label>Numéro de TVA</label>
+            <input [ngModel]="s.vat_number" (ngModelChange)="s.vat_number = $event" /></div>
+          <div class="field"><label>Numéro de compte (IBAN)</label>
+            <input [ngModel]="s.bank_account" (ngModelChange)="s.bank_account = $event" /></div>
+        </div>
+        <div class="form-grid cols-2">
           <div class="field"><label>LinkedIn</label>
             <input [ngModel]="s.linkedin_url" (ngModelChange)="s.linkedin_url = $event" /></div>
+          <div class="field"></div>
         </div>
         <div class="field"><label>Texte du pied de page</label>
           <textarea rows="3" [ngModel]="s.footer_text" (ngModelChange)="s.footer_text = $event"></textarea></div>

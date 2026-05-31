@@ -3,6 +3,13 @@ import { Component, Input } from '@angular/core';
 import { Block } from '../../../core/models';
 import { LinkBtn } from '../../link-btn/link-btn';
 
+/** Cartes flottantes par défaut (si le bloc n'en définit pas). */
+const DEFAULT_CARDS = [
+  { icon: '🚀', label: 'Time-to-market', value: '−40 % en moyenne' },
+  { icon: '🤝', label: 'Équipes coachées', value: '+120 squads' },
+  { icon: '📈', label: 'Satisfaction', value: '4,9 / 5' },
+];
+
 @Component({
   selector: 'app-hero',
   imports: [LinkBtn],
@@ -24,9 +31,12 @@ import { LinkBtn } from '../../link-btn/link-btn';
         </div>
 
         <div class="hero-visual" aria-hidden="true">
-          <div class="float-card fc1"><span class="ico">🚀</span><div>Time-to-market<small>−40 % en moyenne</small></div></div>
-          <div class="float-card fc2"><span class="ico">🤝</span><div>Équipes coachées<small>+120 squads</small></div></div>
-          <div class="float-card fc3"><span class="ico">📈</span><div>Satisfaction<small>4,9 / 5</small></div></div>
+          @for (card of cards; track $index) {
+            <div class="float-card" [class]="'fc' + ($index + 1)">
+              <span class="ico">{{ card.icon }}</span>
+              <div>{{ card.label }}<small>{{ card.value }}</small></div>
+            </div>
+          }
         </div>
       </div>
     </header>
@@ -35,6 +45,12 @@ import { LinkBtn } from '../../link-btn/link-btn';
 export class Hero {
   @Input({ required: true }) block!: Block;
   get c() { return this.block.content; }
+
+  /** Cartes flottantes du visuel — éditables via `content.cards`. */
+  get cards() {
+    const c = this.c?.cards;
+    return Array.isArray(c) && c.length ? c.slice(0, 3) : DEFAULT_CARDS;
+  }
 
   /** Découpe le titre autour de la sous-chaîne `highlight` (colorée en vert). */
   get before(): string {

@@ -45,6 +45,10 @@ class Command(BaseCommand):
                 brand_name="foxugly",
                 tagline="Coaching agile indépendant",
                 contact_email="contact@foxugly.com",
+                phone="+32 4XX XX XX XX",
+                address="Rue de l'Exemple 1\n1000 Bruxelles\nBelgique",
+                vat_number="BE 0123.456.789",
+                bank_account="BE00 0000 0000 0000",
                 footer_text="Coaching agile indépendant. J'aide vos équipes à "
                             "livrer de la valeur, plus vite et plus sereinement.",
             ),
@@ -165,11 +169,11 @@ class Command(BaseCommand):
                                       "limit": 3})
         Block.objects.create(page=accueil, block_type=Block.Type.PROJECT_LIST, order=5, content={
             "eyebrow": "Réalisations", "title": "Des transformations qui tiennent", "limit": 3})
-        Block.objects.create(page=accueil, block_type=Block.Type.CONTACT_FORM, order=6, anchor="contact",
-                             content={"eyebrow": "Contact",
-                                      "title": "Parlons de votre contexte",
-                                      "lead": "Un premier échange de 30 minutes, sans engagement. "
-                                              "Décrivez votre besoin, je vous réponds rapidement."})
+        Block.objects.create(page=accueil, block_type=Block.Type.CTA, order=6, anchor="contact",
+                             content={"title": "Prêt à rendre votre organisation vraiment agile ?",
+                                      "text": "Parlons de votre contexte. Un premier échange de "
+                                              "30 minutes, sans engagement.",
+                                      "cta": {"label": "Me contacter", "href": "/contact"}})
 
         # Qui suis-je
         qsj = Page.objects.create(slug="qui-suis-je", title="Qui suis-je", nav_label="Qui suis-je", order=2)
@@ -247,7 +251,7 @@ class Command(BaseCommand):
         Block.objects.create(page=proj, block_type=Block.Type.CTA, order=3, content={
             "title": "Votre projet pourrait être le prochain",
             "text": "Racontez-moi votre contexte, je vous dis comment je m'y prendrais.",
-            "cta": {"label": "Démarrer un projet", "href": "/#contact"}})
+            "cta": {"label": "Démarrer un projet", "href": "/contact"}})
 
         # Partenaires
         part = Page.objects.create(slug="partenaires", title="Partenaires", nav_label="Partenaires", order=5)
@@ -264,4 +268,16 @@ class Command(BaseCommand):
         Block.objects.create(page=part, block_type=Block.Type.CTA, order=5, content={
             "title": "Une association, un projet à soutenir ?",
             "text": "Si votre cause touche au numérique, à l'agilité ou à la jeunesse, parlons-en.",
-            "cta": {"label": "Me contacter", "href": "/#contact"}})
+            "cta": {"label": "Me contacter", "href": "/contact"}})
+
+        # Contact (page dédiée)
+        contact = Page.objects.create(slug="contact", title="Me contacter",
+                                      nav_label="Me contacter", order=6, show_in_nav=False)
+        Block.objects.create(page=contact, block_type=Block.Type.PAGE_HERO, order=1, content={
+            "badge": "Contact", "title": "Me contacter",
+            "text": "Parlons de votre contexte. Un premier échange de 30 minutes, sans engagement."})
+        Block.objects.create(page=contact, block_type=Block.Type.CONTACT_FORM, order=2, content={
+            "eyebrow": "Écrivez-moi", "title": "Votre message",
+            "lead": "Décrivez votre besoin, je vous réponds rapidement."})
+        Block.objects.create(page=contact, block_type=Block.Type.CONTACT_INFO, order=3, content={
+            "eyebrow": "Coordonnées", "title": "Informations"})

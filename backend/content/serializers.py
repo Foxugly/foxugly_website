@@ -96,6 +96,6 @@ class SiteSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SiteSettings
         fields = [
-            "brand_name", "tagline", "contact_email",
-            "linkedin_url", "footer_text",
+            "brand_name", "tagline", "contact_email", "phone", "address",
+            "vat_number", "bank_account", "linkedin_url", "footer_text",
         ]

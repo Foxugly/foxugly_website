@@ -33,6 +33,14 @@ export function renderBlockHtml(block: Block): string {
       const title = i >= 0
         ? `${esc(t.slice(0, i))}<span class="hl">${esc(hi)}</span>${esc(t.slice(i + hi.length))}`
         : esc(t);
+      const cards = (Array.isArray(c.cards) && c.cards.length ? c.cards : [
+        { icon: '🚀', label: 'Time-to-market', value: '−40 %' },
+        { icon: '🤝', label: 'Équipes coachées', value: '+120 squads' },
+        { icon: '📈', label: 'Satisfaction', value: '4,9 / 5' },
+      ]).slice(0, 3);
+      const cardsHtml = cards.map((cd: any, k: number) =>
+        `<div class="float-card fc${k + 1}"><span class="ico">${esc(cd.icon)}</span>` +
+        `<div>${esc(cd.label)}<small>${esc(cd.value)}</small></div></div>`).join('');
       return `<header class="hero"><div class="wrap hero-grid"><div>
         ${c.badge ? `<span class="hero-badge"><span class="dot"></span> ${esc(c.badge)}</span>` : ''}
         <h1>${title}</h1>
@@ -41,11 +49,7 @@ export function renderBlockHtml(block: Block): string {
           ${c.primary_cta?.label ? `<a class="btn btn-primary">${esc(c.primary_cta.label)} →</a>` : ''}
           ${c.secondary_cta?.label ? `<a class="btn btn-ghost">${esc(c.secondary_cta.label)}</a>` : ''}
         </div></div>
-        <div class="hero-visual">
-          <div class="float-card fc1"><span class="ico">🚀</span><div>Time-to-market<small>−40 %</small></div></div>
-          <div class="float-card fc2"><span class="ico">🤝</span><div>Équipes<small>+120 squads</small></div></div>
-          <div class="float-card fc3"><span class="ico">📈</span><div>Satisfaction<small>4,9 / 5</small></div></div>
-        </div></div></header>`;
+        <div class="hero-visual">${cardsHtml}</div></div></header>`;
     }
 
     case 'page_hero':
@@ -141,6 +145,9 @@ export function renderBlockHtml(block: Block): string {
           <a class="btn btn-primary" style="width:100%; justify-content:center;">Envoyer le message</a>
         </div>
       </div></section>`;
+
+    case 'contact_info':
+      return `<section class="block"><div class="wrap">${dynamicNote(c, 'Coordonnées (adresse, email, téléphone, TVA, compte — réglages)')}</div></section>`;
 
     case 'testimonials':
       return `<section class="block"><div class="wrap">${dynamicNote(c, 'Témoignages')}</div></section>`;
