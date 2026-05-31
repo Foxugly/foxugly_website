@@ -118,6 +118,9 @@ Le rôle `AWS_DEPLOY_ROLE_ARN` doit :
   restreint au dépôt `Foxugly/foxugly_website` ;
 - autoriser `ssm:SendCommand`, `ssm:GetCommandInvocation`, `ssm:ListCommandInvocations`.
 
+➡ **Policies IAM prêtes à coller** (rôle d'instance + rôle de déploiement OIDC) et
+commandes de création : voir **`deploy/iam/`** (`README.md` + 3 fichiers JSON).
+
 Ensuite, **chaque push sur `main` déploie automatiquement**. Déclenchement manuel
 possible via l'onglet *Actions* (workflow_dispatch).
 
