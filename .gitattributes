@@ -1,0 +1,17 @@
+# Normalisation des fins de ligne. Les scripts/déploiement DOIVENT rester en LF
+# (un CRLF casse le shebang de deploy.sh et les unités systemd côté Linux).
+* text=auto eol=lf
+
+*.sh        text eol=lf
+*.service   text eol=lf
+*.conf      text eol=lf
+*.py        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# Binaires (pas de conversion)
+*.png  binary
+*.ico  binary
+*.jpg  binary
+*.woff binary
+*.woff2 binary
