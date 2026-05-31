@@ -1,0 +1,30 @@
+# Oneshot : génère /run/foxugly/.env depuis AWS SSM Parameter Store au boot.
+# /run est un tmpfs (effacé à chaque reboot), d'où la régénération à chaque démarrage.
+#
+# Pré-requis : les paramètres existent sous le préfixe /foxugly/prod/ (type String
+# ou SecureString), p.ex. /foxugly/prod/DJANGO_SECRET_KEY. Le rôle IAM de l'instance
+# doit autoriser ssm:GetParametersByPath (+ kms:Decrypt pour les SecureString).
+# Adapter le préfixe / la région si besoin.
+[Unit]
+Description=foxugly — génération du .env depuis SSM Parameter Store
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Tourne en root (accès au rôle IAM) mais groupe foxugly : /run/foxugly est créé
+# en root:foxugly 0750 → l'utilisateur foxugly (gunicorn) peut le traverser.
+Group=foxugly
+RuntimeDirectory=foxugly
+RuntimeDirectoryMode=0750
+ExecStart=/usr/bin/bash -c '\
+  umask 027; \
+  aws ssm get-parameters-by-path --region eu-west-1 --path /foxugly/prod/ \
+    --with-decryption --recursive --query "Parameters[].[Name,Value]" --output text \
+  | while read -r name value; do echo "$(basename "$name")=$value"; done \
+  > /run/foxugly/.env'
+ExecStartPost=/usr/bin/chown foxugly:foxugly /run/foxugly/.env
+
+[Install]
+WantedBy=multi-user.target

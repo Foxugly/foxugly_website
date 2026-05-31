@@ -40,58 +40,66 @@ sudo useradd -r -m -d /opt/foxugly -s /bin/bash foxugly
 sudo mkdir -p /opt/foxugly && sudo chown foxugly:foxugly /opt/foxugly
 sudo -u foxugly git clone https://github.com/Foxugly/foxugly_website.git /opt/foxugly
 
-# Backend : venv + dépendances + .env
+# Backend : venv + dépendances
 cd /opt/foxugly/backend
 sudo -u foxugly python3 -m venv .venv
 sudo -u foxugly .venv/bin/pip install -r requirements.txt
-sudo -u foxugly cp .env.example .env       # puis ÉDITER (voir §2)
 
-# Première initialisation de la base + contenu + admin
-sudo -u foxugly .venv/bin/python manage.py migrate
-sudo -u foxugly .venv/bin/python manage.py seed_content   # ⚠ une seule fois (écrase le contenu)
-sudo -u foxugly .venv/bin/python manage.py createsuperuser
-sudo -u foxugly .venv/bin/python manage.py collectstatic --noinput
+# Secrets : créer d'abord les paramètres SSM (voir §2), puis générer /run/foxugly/.env
+sudo cp /opt/foxugly/deploy/foxugly-env.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now foxugly-env        # écrit /run/foxugly/.env depuis SSM
 
-# Frontend : build initial
-cd /opt/foxugly/frontend
-sudo -u foxugly npm ci && sudo -u foxugly npm run build
+# Première initialisation (base + contenu + admin), env chargé depuis /run
+sudo -u foxugly bash
+  set -a; . /run/foxugly/.env; set +a
+  cd /opt/foxugly/backend
+  .venv/bin/python manage.py migrate
+  .venv/bin/python manage.py seed_content      # ⚠ une seule fois (écrase le contenu)
+  .venv/bin/python manage.py createsuperuser
+  .venv/bin/python manage.py collectstatic --noinput
+  # Frontend : build initial
+  cd /opt/foxugly/frontend && npm ci && npm run build
+  exit
 
-# Services
+# Services applicatifs
 sudo cp /opt/foxugly/deploy/foxugly.service /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable --now foxugly
+
+# nginx — le certificat wildcard *.foxugly.com (DNS-01) est déjà en place ;
+# nginx.conf contient directement le bloc 443. Vérifier que ces 2 fichiers existent
+# (créés par certbot ; sinon les générer) :
+#   /etc/letsencrypt/options-ssl-nginx.conf  et  /etc/letsencrypt/ssl-dhparams.pem
 sudo cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly
 sudo ln -s /etc/nginx/sites-available/foxugly /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-
-# TLS (Let's Encrypt) — ajoute le 443 + redirection automatiquement
-sudo certbot --nginx -d foxugly.com -d www.foxugly.com
 ```
 
 > `seed_content` **écrase** tout le contenu : à ne lancer qu'à l'initialisation.
 
 ---
 
-## 2. Configuration (`/opt/foxugly/backend/.env`)
+## 2. Secrets — SSM Parameter Store → `/run/foxugly/.env`
 
-Voir `backend/.env.example`. Au minimum :
+Le `.env` vit dans **`/run/foxugly/`** (tmpfs, effacé au reboot). `foxugly-env.service`
+le **régénère à chaque boot** en lisant les paramètres sous le préfixe `/foxugly/prod/`
+de **SSM Parameter Store**. Voir `backend/.env.example` pour la liste des clés.
 
-```
-DJANGO_SECRET_KEY=<clé générée>
-DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=foxugly.com,www.foxugly.com
-DJANGO_CSRF_TRUSTED_ORIGINS=https://foxugly.com,https://www.foxugly.com
-DJANGO_SECURE=True
-```
-
-Générer la clé : `python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`
-
-**Option SSM Parameter Store** : stocker `DJANGO_SECRET_KEY` (type *SecureString*)
-sous `/foxugly/prod/DJANGO_SECRET_KEY` et régénérer le `.env` au déploiement, p.ex.
-au début de `deploy.sh` :
+Créer les paramètres une fois (depuis un poste autorisé) :
 ```bash
-aws ssm get-parameter --name /foxugly/prod/DJANGO_SECRET_KEY --with-decryption \
-  --query Parameter.Value --output text > /dev/null  # → injecter dans .env
+KEY=$(python -c "from django.core.management.utils import get_random_secret_key as g; print(g())")
+R="--region eu-west-1"
+aws ssm put-parameter $R --type SecureString --name /foxugly/prod/DJANGO_SECRET_KEY --value "$KEY"
+aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_DEBUG --value False
+aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
+aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
+aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
+aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 3
 ```
+
+Le **rôle IAM de l'instance** doit autoriser `ssm:GetParametersByPath` sur
+`arn:aws:ssm:eu-west-1:*:parameter/foxugly/prod/*` (+ `kms:Decrypt` pour le SecureString).
+Après modification d'un paramètre : `sudo systemctl restart foxugly-env foxugly`.
 
 ---
 
