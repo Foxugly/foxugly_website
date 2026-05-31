@@ -141,6 +141,11 @@ class Command(BaseCommand):
                     "mesurable, durable.",
             "primary_cta": {"label": "Découvrir mon approche", "href": "/agilite"},
             "secondary_cta": {"label": "Voir mes projets", "href": "/projets"},
+            "cards": [
+                {"icon": "🚀", "label": "Time-to-market", "value": "−40 % en moyenne"},
+                {"icon": "🤝", "label": "Équipes coachées", "value": "+120 squads"},
+                {"icon": "📈", "label": "Satisfaction", "value": "4,9 / 5"},
+            ],
         })
         Block.objects.create(page=accueil, block_type=Block.Type.STATS, order=2, content={
             "items": [

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('formulaire de contact : envoi → confirmation', async ({ page }) => {
-  await page.goto('/accueil#contact');
+  await page.goto('/contact');
   await page.fill('#cf-name', 'E2E Test');
   await page.fill('#cf-email', 'e2e@example.com');
   await page.fill('#cf-message', 'Message de test automatisé (e2e).');
