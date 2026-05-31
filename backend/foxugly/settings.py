@@ -140,3 +140,17 @@ if os.environ.get("DJANGO_SECURE", "False") == "True":
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# --- Sentry (monitoring d'erreurs) ------------------------------------------
+# Activé uniquement si SENTRY_DSN est défini (no-op en local / sans DSN).
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=os.environ.get("SENTRY_ENV", "production"),
+        # Tracing désactivé par défaut (0.0) ; monter si besoin de perf monitoring.
+        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
+        send_default_pii=False,
+    )

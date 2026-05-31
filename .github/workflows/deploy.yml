@@ -96,3 +96,16 @@ jobs:
           aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" --query "StandardErrorContent" --output text
           echo "Statut final : $STATUS"
           test "$STATUS" = "Success"
+
+      - name: Healthcheck du site
+        run: |
+          set -uo pipefail
+          URL="https://foxugly.com/api/pages/"
+          for i in $(seq 1 10); do
+            CODE=$(curl -fsS -o /dev/null -w "%{http_code}" "$URL" || echo 000)
+            echo "Tentative $i/10 → HTTP $CODE"
+            [ "$CODE" = "200" ] && { echo "✓ $URL répond 200"; exit 0; }
+            sleep 6
+          done
+          echo "✗ Healthcheck échoué : $URL ne répond pas 200"
+          exit 1
