@@ -1,11 +1,9 @@
-name: Déploiement
+name: CI & Déploiement
 
-# Pattern S3-bundle (comme quizonline) :
-#   build front+back en CI → tar.gz vers s3://foxugly-deploy/builds/
-#   → SSM Run Command : l'EC2 télécharge, extrait, puis lance deploy/deploy.sh.
-# Aucune compilation sur l'instance (t3.small partagée avec quizonline).
+# Sur push main : tests (backend + frontend + e2e) PUIS, s'ils passent, déploiement
+# via le pattern S3-bundle (build CI → S3 → SSM → instance).
 #
-# Secrets requis (Settings → Secrets and variables → Actions) :
+# Secrets requis (pour le déploiement uniquement) :
 #   AWS_DEPLOY_ROLE_ARN  rôle IAM assumé par OIDC (s3:PutObject, ssm:SendCommand…)
 #   EC2_INSTANCE_ID      ex : i-0123456789abcdef0
 #   AWS_REGION           optionnel (défaut : eu-west-1)
@@ -28,7 +26,93 @@ env:
   BUCKET: foxugly-deploy
 
 jobs:
+  # ---------------------------------------------------------------------------
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Tests backend (Django)
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          python manage.py test content -v2
+
+  # ---------------------------------------------------------------------------
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Tests unitaires frontend (Vitest)
+        working-directory: frontend
+        run: |
+          npm ci
+          npx ng test --watch=false
+
+  # ---------------------------------------------------------------------------
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Démarrer le backend (migrate + seed + admin)
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          python manage.py migrate --noinput
+          python manage.py seed_content
+          DJANGO_SUPERUSER_PASSWORD=admin12345 \
+            python manage.py createsuperuser --noinput --username admin --email admin@foxugly.com || true
+          nohup python manage.py runserver 127.0.0.1:8001 --noreload > /tmp/backend.log 2>&1 &
+
+      - name: Démarrer le frontend (ng serve + proxy)
+        working-directory: frontend
+        run: |
+          npm ci
+          nohup npm start > /tmp/frontend.log 2>&1 &
+
+      - name: Attendre que les serveurs répondent
+        run: |
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8001/api/pages/ >/dev/null && break || sleep 2; done
+          for i in $(seq 1 60); do curl -sf http://localhost:4200 >/dev/null && break || sleep 2; done
+          curl -sf http://127.0.0.1:8001/api/pages/ >/dev/null && echo "backend OK"
+          curl -sf http://localhost:4200 >/dev/null && echo "frontend OK"
+
+      - name: Tests e2e (Playwright)
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
+
+      - name: Logs serveurs (si échec)
+        if: failure()
+        run: |
+          echo "=== backend ==="; tail -50 /tmp/backend.log || true
+          echo "=== frontend ==="; tail -50 /tmp/frontend.log || true
+
+  # ---------------------------------------------------------------------------
   deploy:
+    needs: [backend-tests, frontend-tests, e2e-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,8 +147,6 @@ jobs:
         run: |
           BUNDLE="foxugly-${GITHUB_SHA::7}.tar.gz"
           echo "BUNDLE=$BUNDLE" >> "$GITHUB_ENV"
-          # backend (source) + frontend déjà buildé + deploy/. node_modules/.venv
-          # /db/media ne sont pas dans le checkout (gitignored) → bundle propre.
           tar czf "$BUNDLE" backend frontend/dist deploy
 
       - name: Configurer les identifiants AWS (OIDC)
@@ -114,7 +196,7 @@ jobs:
       - name: Healthcheck du site
         run: |
           set -uo pipefail
-          URL="https://foxugly.com/api/pages/"
+          URL="https://www.foxugly.com/api/pages/"
           for i in $(seq 1 10); do
             CODE=$(curl -fsS -o /dev/null -w "%{http_code}" "$URL" || echo 000)
             echo "Tentative $i/10 → HTTP $CODE"
