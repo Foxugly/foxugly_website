@@ -15,13 +15,17 @@
       ]
     },
     {
+      "Sid": "ListDeployBundles",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::foxugly-deploy",
+      "Condition": { "StringLike": { "s3:prefix": ["builds/", "builds/*"] } }
+    },
+    {
       "Sid": "ReadDeployBundles",
       "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:ListBucket"],
-      "Resource": [
-        "arn:aws:s3:::foxugly-deploy",
-        "arn:aws:s3:::foxugly-deploy/builds/*"
-      ]
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::foxugly-deploy/builds/*"
     }
   ]
 }
