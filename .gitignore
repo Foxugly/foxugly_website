@@ -1,0 +1,19 @@
+# --- Éditeurs / IDE ---
+.idea/
+.vscode/
+
+# --- Outils & artefacts de session ---
+.playwright-mcp/
+*.log
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Secrets / env ---
+.env
+.env.*
+!.env.example
+
+# Captures d'écran de vérification (artefacts temporaires)
+/*.png

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace admin — foxugly</title>
+<link rel="icon" href="assets/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  body { background: var(--bg-soft); }
+  .admin { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+  /* sidebar */
+  .side { background: var(--ink); color: #cfc8de; padding: 1.4rem 1rem; position: sticky; top: 0; height: 100vh; }
+  .side .brand { color: #fff; margin-bottom: 2rem; }
+  .side .brand .fox { color:#fff; }
+  .side-link { display: flex; align-items: center; gap: .7rem; padding: .7rem .9rem; border-radius: 10px; font-weight: 500; cursor: pointer; color:#cfc8de; transition:.15s; }
+  .side-link:hover { background: rgba(255,255,255,.08); color:#fff; }
+  .side-link.active { background: var(--grad-accent); color:#fff; }
+  .side-sep { font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin:1.5rem .9rem .5rem; }
+  .side-foot { position:absolute; bottom:1.4rem; left:1rem; right:1rem; font-size:.82rem; }
+  .side-foot a { color:var(--fox-orange); }
+  /* main */
+  .main { padding: 2rem 2.5rem; }
+  .admin-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; }
+  .admin-top h1 { font-size:1.7rem; }
+  .admin-user { display:flex; align-items:center; gap:.7rem; font-weight:600; font-size:.92rem; }
+  /* stat cards */
+  .admin-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:1.2rem; margin-bottom:2rem; }
+  .astat { background:#fff; border:1px solid var(--line); border-radius:14px; padding:1.3rem; box-shadow:var(--shadow-sm); }
+  .astat .ic { width:42px;height:42px;border-radius:11px;display:grid;place-items:center;color:#fff;font-size:1.1rem;margin-bottom:.8rem; }
+  .astat .n { font-size:1.8rem; font-weight:800; }
+  .astat .l { color:var(--muted); font-size:.85rem; }
+  /* tabs */
+  .tabs { display:flex; gap:.4rem; margin-bottom:1.2rem; border-bottom:1px solid var(--line); }
+  .tab { padding:.7rem 1.1rem; font-weight:600; color:var(--ink-soft); cursor:pointer; border-bottom:2px solid transparent; }
+  .tab.active { color:var(--fox-violet); border-color:var(--fox-violet); }
+  /* table */
+  .panel { background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-sm); overflow:hidden; }
+  .panel-head { display:flex; justify-content:space-between; align-items:center; padding:1.1rem 1.3rem; border-bottom:1px solid var(--line); }
+  .panel-head h3 { font-size:1.1rem; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:.85rem 1.3rem; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--line); }
+  tbody tr { border-bottom:1px solid var(--line); }
+  tbody tr:hover { background:var(--bg-soft); }
+  .badge { font-size:.74rem; font-weight:600; padding:.2rem .6rem; border-radius:999px; }
+  .b-pub { background:#e6fbf7; color:#0d9488; }
+  .b-draft { background:#fff4e6; color:#c2700a; }
+  .row-act { color:var(--fox-violet); font-weight:600; cursor:pointer; font-size:.85rem; }
+  .row-act.del { color:#dc2626; margin-left:.8rem; }
+  /* add form */
+  .add-form { background:#fff; border:1px solid var(--line); border-radius:14px; padding:1.6rem; box-shadow:var(--shadow-sm); margin-top:1.5rem; }
+  .add-form h3 { margin-bottom:1.2rem; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  .tab-pane { display:none; } .tab-pane.active { display:block; }
+  .note { background:#efeaff; border:1px solid #d9ccff; border-radius:12px; padding:.9rem 1.1rem; font-size:.88rem; color:var(--fox-indigo); margin-bottom:1.5rem; }
+  @media (max-width:820px){ .admin{grid-template-columns:1fr;} .side{position:static;height:auto;} .admin-stats{grid-template-columns:1fr 1fr;} .form-row{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="admin">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <a href="index.html" class="brand"><img src="assets/logo-white.svg" alt="foxugly"><span><span class="fox">fox</span><span class="ugly">ugly</span></span></a>
+    <div class="side-sep">Contenus</div>
+    <div class="side-link active">📊 Tableau de bord</div>
+    <div class="side-link" onclick="showTab('news', null)">📰 Actualités</div>
+    <div class="side-link" onclick="showTab('projets', null)">🚀 Projets</div>
+    <div class="side-link" onclick="showTab('partenaires', null)">🤝 Partenaires</div>
+    <div class="side-sep">Réglages</div>
+    <div class="side-link">👤 Utilisateurs</div>
+    <div class="side-link">⚙️ Paramètres</div>
+    <div class="side-foot">Connecté en admin<br><a href="index.html">← Retour au site</a></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="admin-top">
+      <h1>Tableau de bord</h1>
+      <div class="admin-user"><span class="avatar bg-violet" style="width:38px;height:38px;font-size:.85rem;">RV</span> Renaud V.</div>
+    </div>
+
+    <div class="note">💡 Aperçu de maquette. En production, ce back-office s'appuie sur l'admin Django (authentification, droits, historique) avec une API exposée à Angular.</div>
+
+    <div class="admin-stats">
+      <div class="astat"><div class="ic bg-orange">📰</div><div class="n">12</div><div class="l">Actualités publiées</div></div>
+      <div class="astat"><div class="ic bg-violet">🚀</div><div class="n">28</div><div class="l">Projets</div></div>
+      <div class="astat"><div class="ic bg-teal">🤝</div><div class="n">15</div><div class="l">Partenaires</div></div>
+      <div class="astat"><div class="ic bg-amber">✉️</div><div class="n">7</div><div class="l">Demandes en attente</div></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active" data-t="news" onclick="showTab('news', this)">Actualités</div>
+      <div class="tab" data-t="projets" onclick="showTab('projets', this)">Projets</div>
+      <div class="tab" data-t="partenaires" onclick="showTab('partenaires', this)">Partenaires</div>
+    </div>
+
+    <!-- NEWS PANE -->
+    <div class="tab-pane active" id="pane-news">
+      <div class="panel">
+        <div class="panel-head"><h3>Actualités</h3><button class="btn btn-primary" onclick="toggleForm('form-news')">+ Ajouter une news</button></div>
+        <table>
+          <thead><tr><th>Titre</th><th>Catégorie</th><th>Date</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>foxugly au Agile Tour Lyon 2026</td><td>Événement</td><td>28 mai 2026</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+            <tr><td>5 signes que votre Scrum est du théâtre</td><td>Article</td><td>14 mai 2026</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+            <tr><td>Nouveau format : « Scrum sans théâtre »</td><td>Atelier</td><td>2 mai 2026</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+            <tr><td>Webinar : OKR et agilité</td><td>Événement</td><td>—</td><td><span class="badge b-draft">Brouillon</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="add-form" id="form-news" style="display:none;">
+        <h3>Nouvelle actualité</h3>
+        <form onsubmit="event.preventDefault(); this.reset(); alert('News enregistrée (démo)');">
+          <div class="form-row">
+            <div class="field"><label>Titre</label><input type="text" placeholder="Titre de la news" required></div>
+            <div class="field"><label>Catégorie</label><select><option>Article</option><option>Événement</option><option>Cabinet</option></select></div>
+          </div>
+          <div class="field"><label>Contenu</label><textarea rows="4" placeholder="Rédigez l'article..."></textarea></div>
+          <div class="form-row">
+            <div class="field"><label>Date de publication</label><input type="date"></div>
+            <div class="field"><label>Statut</label><select><option>Publié</option><option>Brouillon</option></select></div>
+          </div>
+          <button class="btn btn-primary" type="submit">Enregistrer</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PROJETS PANE -->
+    <div class="tab-pane" id="pane-projets">
+      <div class="panel">
+        <div class="panel-head"><h3>Projets</h3><button class="btn btn-primary" onclick="toggleForm('form-projets')">+ Ajouter un projet</button></div>
+        <table>
+          <thead><tr><th>Projet</th><th>Secteur</th><th>Résultat</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Mise à l'échelle de 14 squads</td><td>Banque</td><td>Prévisibilité +35 %</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+            <tr><td>Logique produit e-commerce</td><td>Retail</td><td>Release ÷ 3</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+            <tr><td>Coaching delivery santé</td><td>Santé</td><td>Lead-time −60 %</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="add-form" id="form-projets" style="display:none;">
+        <h3>Nouveau projet</h3>
+        <form onsubmit="event.preventDefault(); this.reset(); alert('Projet enregistré (démo)');">
+          <div class="form-row">
+            <div class="field"><label>Nom du projet</label><input type="text" required></div>
+            <div class="field"><label>Secteur</label><select><option>Banque</option><option>Retail</option><option>Santé</option><option>Public</option><option>Tech / SaaS</option></select></div>
+          </div>
+          <div class="field"><label>Description</label><textarea rows="3"></textarea></div>
+          <div class="field"><label>Résultat clé</label><input type="text" placeholder="ex : Lead-time −60 %"></div>
+          <button class="btn btn-primary" type="submit">Enregistrer</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PARTENAIRES PANE -->
+    <div class="tab-pane" id="pane-partenaires">
+      <div class="panel">
+        <div class="panel-head"><h3>Partenaires</h3><button class="btn btn-primary" onclick="toggleForm('form-partenaires')">+ Ajouter un partenaire</button></div>
+        <table>
+          <thead><tr><th>Nom</th><th>Type</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Client A</td><td>Client</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+            <tr><td>Client B</td><td>Client</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+            <tr><td>Association 1</td><td>Association</td><td><span class="badge b-pub">Publié</span></td><td><span class="row-act">Éditer</span><span class="row-act del">Suppr.</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="add-form" id="form-partenaires" style="display:none;">
+        <h3>Nouveau client / association</h3>
+        <form onsubmit="event.preventDefault(); this.reset(); alert('Enregistré (démo)');">
+          <div class="form-row">
+            <div class="field"><label>Nom</label><input type="text" required></div>
+            <div class="field"><label>Type</label><select><option>Client</option><option>Association</option></select></div>
+          </div>
+          <div class="field"><label>Secteur / cause</label><input type="text" placeholder="ex : Banque, ou Éducation &amp; jeunesse"></div>
+          <div class="field"><label>Description / type de soutien</label><textarea rows="3"></textarea></div>
+          <div class="field"><label>Lien</label><input type="url" placeholder="https://"></div>
+          <button class="btn btn-primary" type="submit">Enregistrer</button>
+        </form>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function showTab(name, el){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pane-'+name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.t===name));
+}
+function toggleForm(id){
+  const f = document.getElementById(id);
+  f.style.display = f.style.display==='none' ? 'block' : 'none';
+  if(f.style.display==='block') f.scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Service systemd pour Gunicorn (Django foxugly).
+# Installer : sudo cp deploy/foxugly.service /etc/systemd/system/
+#             sudo systemctl daemon-reload && sudo systemctl enable --now foxugly
+[Unit]
+Description=foxugly Gunicorn (Django)
+After=network.target
+
+[Service]
+Type=simple
+User=foxugly
+Group=foxugly
+WorkingDirectory=/opt/foxugly/backend
+EnvironmentFile=/opt/foxugly/backend/.env
+ExecStart=/opt/foxugly/backend/.venv/bin/gunicorn -c gunicorn.conf.py foxugly.wsgi:application
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

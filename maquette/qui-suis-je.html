@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qui suis-je — foxugly</title>
+<link rel="icon" href="assets/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .bio { display:grid; grid-template-columns: .8fr 1.2fr; gap:3rem; align-items:center; }
+  .bio-photo { aspect-ratio: 4/5; border-radius:20px; background:linear-gradient(160deg,#1b1a30,#2a2942); display:grid; place-items:center; color:rgba(255,255,255,.5); font-weight:600; box-shadow:var(--shadow-lg); position:relative; overflow:hidden; }
+  .bio-photo::after{ content:""; position:absolute; inset:0; background:radial-gradient(circle at 70% 20%, rgba(16,185,129,.2), transparent 50%); }
+  .bio-photo span{ position:relative; z-index:1; font-size:.9rem; }
+  .certs { display:flex; flex-wrap:wrap; gap:.6rem; }
+  .cert { background:var(--accent-soft); color:var(--accent-dark); border:1px solid #c7ece0; font-weight:600; font-size:.85rem; padding:.45rem .9rem; border-radius:999px; }
+  .values-list { display:grid; gap:1rem; }
+  .vrow { display:grid; grid-template-columns:48px 1fr; gap:1rem; align-items:start; }
+  .vrow .vi { width:48px; height:48px; border-radius:13px; display:grid; place-items:center; color:#fff; font-size:1.3rem; }
+  .vrow h4 { font-size:1.05rem; margin-bottom:.2rem; }
+  .vrow p { color:var(--ink-soft); font-size:.95rem; }
+  @media (max-width:820px){ .bio{ grid-template-columns:1fr; } .bio-photo{ max-width:340px; margin-inline:auto; } }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand"><img src="assets/logo.svg" alt="foxugly"><span><span class="fox">fox</span><span class="ugly">ugly</span></span></a>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html">Accueil</a>
+      <a href="qui-suis-je.html" class="active">Qui suis-je</a>
+      <a href="agilite.html">Agilité</a>
+      <a href="projets.html">Nos projets</a>
+      <a href="partenaires.html">Partenaires</a>
+      <a href="admin.html">Admin</a>
+      <a href="index.html#contact" class="btn btn-primary nav-cta">Nous contacter</a>
+    </div>
+    <button class="nav-burger" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+  </div>
+</nav>
+
+<header class="page-hero">
+  <div class="wrap">
+    <span class="hero-badge"><span class="dot"></span> L'humain derrière foxugly</span>
+    <h1>Qui suis-je</h1>
+    <p>Coach agile indépendant. J'accompagne les équipes et les organisations qui veulent passer du « faire de l'agile » au « être agile ».</p>
+  </div>
+</header>
+
+<!-- BIO -->
+<section class="block">
+  <div class="wrap bio">
+    <div class="bio-photo"><span>Votre photo ici</span></div>
+    <div>
+      <span class="eyebrow">Enchanté</span>
+      <h2 class="section-title" style="margin-bottom:1rem;">Renaud Vilain</h2>
+      <p style="color:var(--ink-soft); font-size:1.08rem; margin-bottom:1rem;">Après 15 ans passés au cœur d'équipes de développement et de transformation, j'ai créé foxugly pour accompagner les organisations sans dogme ni jargon. Mon obsession : que l'agilité serve la valeur livrée, pas l'inverse.</p>
+      <p style="color:var(--ink-soft); margin-bottom:1.5rem;">J'interviens en coaching d'équipe, en accompagnement à l'échelle et en ateliers sur-mesure. Toujours sur le terrain, aux côtés des personnes, avec un objectif clair : vous rendre autonomes.</p>
+      <div class="certs">
+        <span class="cert">✔ PSM — Professional Scrum Master</span>
+        <span class="cert">✔ PSPO — Product Owner</span>
+        <span class="cert">✔ SAFe Program Consultant</span>
+        <span class="cert">✔ Management 3.0</span>
+      </div>
+      <p style="color:var(--muted); font-size:.85rem; margin-top:1rem;">↳ Bio et certifications à personnaliser avec tes informations réelles.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONVICTIONS -->
+<section class="block soft">
+  <div class="wrap">
+    <div class="block-head text-center">
+      <span class="eyebrow">Mes convictions</span>
+      <h2 class="section-title">Ce en quoi je crois</h2>
+    </div>
+    <div class="values-list" style="max-width:760px; margin-inline:auto;">
+      <div class="vrow"><div class="vi bg-violet">🎯</div><div><h4>La valeur avant la méthode</h4><p>Scrum, Kanban, SAFe ne sont que des outils. Ce qui compte, c'est ce que vos utilisateurs reçoivent.</p></div></div>
+      <div class="vrow"><div class="vi bg-orange">🤝</div><div><h4>Rendre autonome, pas dépendant</h4><p>Mon succès, c'est le jour où vous n'avez plus besoin de moi. Je transmets, je ne garde pas la main.</p></div></div>
+      <div class="vrow"><div class="vi bg-teal">🪞</div><div><h4>L'honnêteté plutôt que la posture</h4><p>Je vous dis ce qui coince, même quand ça dérange. Pas de faux-semblant agile.</p></div></div>
+      <div class="vrow"><div class="vi bg-indigo">🌱</div><div><h4>Le concret avant la théorie</h4><p>On apprend en faisant. Mes interventions sont ancrées dans votre quotidien, pas dans des slides.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PARCOURS -->
+<section class="block">
+  <div class="wrap">
+    <div class="block-head text-center">
+      <span class="eyebrow">Mon parcours</span>
+      <h2 class="section-title">Quelques étapes</h2>
+    </div>
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-dot bg-violet">●</div><div class="tl-body"><h4>Développeur &amp; tech lead</h4><p>Mes débuts au contact du code et des équipes produit. J'y ai compris ce qui fait — ou casse — une équipe.</p></div></div>
+      <div class="tl-item"><div class="tl-dot bg-orange">●</div><div class="tl-body"><h4>Scrum Master &amp; Product Owner</h4><p>Sur le terrain des cérémonies, du backlog et de la livraison continue, en contexte réel.</p></div></div>
+      <div class="tl-item"><div class="tl-dot bg-teal">●</div><div class="tl-body"><h4>Coach agile en entreprise</h4><p>Accompagnement de transformations à l'échelle dans plusieurs secteurs : banque, retail, santé, public.</p></div></div>
+      <div class="tl-item"><div class="tl-dot bg-indigo">●</div><div class="tl-body"><h4>foxugly — coach indépendant</h4><p>Aujourd'hui, je mets cette expérience au service des organisations qui veulent une agilité utile et durable.</p></div></div>
+    </div>
+    <p style="text-align:center; color:var(--muted); font-size:.85rem; margin-top:1.5rem;">↳ Dates et intitulés à adapter à ton vrai parcours.</p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="block soft">
+  <div class="wrap">
+    <div class="cta">
+      <h2>On fait connaissance ?</h2>
+      <p>Un café (virtuel ou non) pour parler de votre contexte et voir si on est faits pour travailler ensemble.</p>
+      <a href="index.html#contact" class="btn btn-primary">Me contacter</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div><a href="index.html" class="brand" style="margin-bottom:1rem;"><img src="assets/logo-white.svg" alt="foxugly"><span><span class="fox" style="color:#fff;">fox</span><span class="ugly">ugly</span></span></a><p style="color:#9d95b0; font-size:.92rem; max-width:280px;">Coaching agile indépendant.</p></div>
+      <div><h5>Cabinet</h5><a href="qui-suis-je.html">Qui suis-je</a><a href="agilite.html">Agilité</a><a href="projets.html">Nos projets</a><a href="partenaires.html">Partenaires</a></div>
+      <div><h5>Ressources</h5><a href="index.html#news">Actualités</a><a href="#">Blog</a><a href="#">Formations</a></div>
+      <div><h5>Contact</h5><a href="mailto:contact@foxugly.com">contact@foxugly.com</a><a href="admin.html">Espace admin</a></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 foxugly.</span><span>Maquette · Django + Angular (PrimeNG)</span></div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partenaires — foxugly</title>
+<link rel="icon" href="assets/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .asso-card { background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:1.6rem; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:.7rem; transition:transform .2s, box-shadow .2s; }
+  .asso-card:hover { transform:translateY(-4px); box-shadow:var(--shadow); }
+  .asso-top { display:flex; align-items:center; gap:.9rem; }
+  .asso-logo { width:54px; height:54px; border-radius:14px; display:grid; place-items:center; color:#fff; font-weight:800; font-size:1.2rem; flex:none; }
+  .asso-card h4 { font-size:1.08rem; }
+  .asso-card .cause { color:var(--muted); font-size:.85rem; }
+  .asso-card p { color:var(--ink-soft); font-size:.93rem; flex:1; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand"><img src="assets/logo.svg" alt="foxugly"><span><span class="fox">fox</span><span class="ugly">ugly</span></span></a>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html">Accueil</a>
+      <a href="qui-suis-je.html">Qui suis-je</a>
+      <a href="agilite.html">Agilité</a>
+      <a href="projets.html">Nos projets</a>
+      <a href="partenaires.html" class="active">Partenaires</a>
+      <a href="admin.html">Admin</a>
+      <a href="index.html#contact" class="btn btn-primary nav-cta">Nous contacter</a>
+    </div>
+    <button class="nav-burger" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+  </div>
+</nav>
+
+<header class="page-hero">
+  <div class="wrap">
+    <span class="hero-badge"><span class="dot"></span> Confiance &amp; engagement</span>
+    <h1>Partenaires</h1>
+    <p>Les organisations qui m'ont fait confiance, et les associations que je choisis de soutenir.</p>
+  </div>
+</header>
+
+<!-- CLIENTS -->
+<section class="block">
+  <div class="wrap">
+    <div class="block-head text-center">
+      <span class="eyebrow">Références</span>
+      <h2 class="section-title">Ils m'ont fait confiance</h2>
+      <p class="section-lead center-block">Des équipes et des organisations de secteurs variés que j'ai accompagnées.</p>
+    </div>
+    <div class="logo-wall">
+      <div class="logo-chip">Client A</div>
+      <div class="logo-chip">Client B</div>
+      <div class="logo-chip">Client C</div>
+      <div class="logo-chip">Client D</div>
+      <div class="logo-chip">Client E</div>
+      <div class="logo-chip">Client F</div>
+      <div class="logo-chip">Client G</div>
+      <div class="logo-chip">Client H</div>
+      <div class="logo-chip">Client I</div>
+      <div class="logo-chip">Client J</div>
+      <div class="logo-chip">Client K</div>
+      <div class="logo-chip">Client L</div>
+    </div>
+    <p class="text-center" style="color:var(--muted); font-size:.85rem; margin-top:1.2rem;">↳ Logos / noms de clients à remplacer par les vrais (avec leur accord).</p>
+  </div>
+</section>
+
+<!-- TÉMOIGNAGE CLIENT -->
+<section class="block soft">
+  <div class="wrap">
+    <div class="grid grid-2">
+      <div class="quote-card"><div class="mark">"</div><p>foxugly a transformé notre rapport au delivery. On livre toutes les deux semaines, et surtout on sait pourquoi.</p><div class="quote-author"><div class="avatar bg-violet">CL</div><div><strong>Claire Lambert</strong><small>CTO · scale-up fintech</small></div></div></div>
+      <div class="quote-card"><div class="mark">"</div><p>Pas de blabla agile. Quelqu'un qui met les mains dedans et qui nous laisse autonomes. Exactement ce qu'on cherchait.</p><div class="quote-author"><div class="avatar bg-orange">MD</div><div><strong>Marc Diallo</strong><small>Directeur SI · grand compte</small></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ASSOCIATIONS -->
+<section class="block">
+  <div class="wrap">
+    <div class="block-head text-center">
+      <span class="eyebrow">Mes engagements</span>
+      <h2 class="section-title">Les associations que je soutiens</h2>
+      <p class="section-lead center-block">Une partie de mon activité va à des causes qui me tiennent à cœur — sponsoring, mécénat de compétences ou dons.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="asso-card">
+        <div class="asso-top"><div class="asso-logo bg-violet">A1</div><div><h4>Association 1</h4><div class="cause">Numérique &amp; inclusion</div></div></div>
+        <p>Mécénat de compétences : j'accompagne bénévolement leurs équipes sur l'organisation et la gestion de projet.</p>
+        <span class="tag orange">Mécénat de compétences</span>
+      </div>
+      <div class="asso-card">
+        <div class="asso-top"><div class="asso-logo bg-orange">A2</div><div><h4>Association 2</h4><div class="cause">Éducation &amp; jeunesse</div></div></div>
+        <p>Sponsor annuel d'un programme qui initie les jeunes au numérique et à l'esprit d'équipe.</p>
+        <span class="tag orange">Sponsoring</span>
+      </div>
+      <div class="asso-card">
+        <div class="asso-top"><div class="asso-logo bg-teal">A3</div><div><h4>Association 3</h4><div class="cause">Solidarité</div></div></div>
+        <p>Don d'une partie du chiffre d'affaires chaque année pour soutenir leurs actions de terrain.</p>
+        <span class="tag orange">Don</span>
+      </div>
+    </div>
+    <p class="text-center" style="color:var(--muted); font-size:.85rem; margin-top:1.2rem;">↳ À remplacer par les associations que tu soutiens réellement et le type de soutien.</p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="block soft">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Une association, un projet à soutenir ?</h2>
+      <p>Si votre cause touche au numérique, à l'agilité ou à la jeunesse, parlons-en.</p>
+      <a href="index.html#contact" class="btn btn-primary">Me contacter</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div><a href="index.html" class="brand" style="margin-bottom:1rem;"><img src="assets/logo-white.svg" alt="foxugly"><span><span class="fox" style="color:#fff;">fox</span><span class="ugly">ugly</span></span></a><p style="color:#9d95b0; font-size:.92rem; max-width:280px;">Coaching agile indépendant.</p></div>
+      <div><h5>Cabinet</h5><a href="qui-suis-je.html">Qui suis-je</a><a href="agilite.html">Agilité</a><a href="projets.html">Nos projets</a><a href="partenaires.html">Partenaires</a></div>
+      <div><h5>Ressources</h5><a href="index.html#news">Actualités</a><a href="#">Blog</a><a href="#">Formations</a></div>
+      <div><h5>Contact</h5><a href="mailto:contact@foxugly.com">contact@foxugly.com</a><a href="admin.html">Espace admin</a></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 foxugly.</span><span>Maquette · Django + Angular (PrimeNG)</span></div>
+  </div>
+</footer>
+
+</body>
+</html>
