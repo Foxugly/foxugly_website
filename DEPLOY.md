@@ -7,10 +7,10 @@ télécharger et déployer. **Aucune compilation sur le serveur.**
 ```
 Internet ─► nginx (443/80, partagé)
               ├─ foxugly.com → frontend Angular (/opt/foxugly/frontend/dist/frontend/browser)
-              │                + /api /api-auth /admin /static → Gunicorn 127.0.0.1:8003
+              │                + /api /api-auth /admin /static → Gunicorn 127.0.0.1:8004
               │                + /media → /opt/foxugly/backend/media
               └─ quizonline.…  (Gunicorn :8000)
-            Gunicorn foxugly  [systemd: foxugly.service, :8003]
+            Gunicorn foxugly  [systemd: foxugly.service, :8004]
             secrets : /run/foxugly/.env  [systemd: foxugly-env.service ← SSM Parameter Store]
 
 CI (push main) → build front+back → s3://foxugly-deploy/builds/ → SSM → deploy/deploy.sh
@@ -63,7 +63,7 @@ sudo -u django bash
   python manage.py collectstatic --noinput
   exit
 
-sudo systemctl enable --now foxugly              # Gunicorn :8003
+sudo systemctl enable --now foxugly              # Gunicorn :8004
 
 # Module brotli (requis par le vhost ; sans lui « nginx -t » échoue)
 sudo apt-get install -y libnginx-mod-brotli      # Ubuntu/Debian (auto-chargé)
@@ -97,7 +97,7 @@ aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_DEBUG --value
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
-aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8003
+aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8004
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 2
 
 # Formulaire de contact via Microsoft Graph (sinon les messages sont seulement stockés)
@@ -148,7 +148,7 @@ aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
 ## 5. Exploitation
 
 ```bash
-sudo systemctl status foxugly        # Gunicorn foxugly (:8003)
+sudo systemctl status foxugly        # Gunicorn foxugly (:8004)
 sudo journalctl -u foxugly -f        # logs applicatifs
 sudo systemctl restart foxugly
 ```
