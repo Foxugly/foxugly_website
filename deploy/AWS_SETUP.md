@@ -30,7 +30,7 @@ aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_DEBUG --value
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
-aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8001
+aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8003
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 2
 aws ssm put-parameter $R --type String --name /foxugly/prod/SITE_URL --value https://www.foxugly.com
 ```
@@ -67,9 +67,10 @@ Repo `Foxugly/foxugly_website` → **Settings → Secrets and variables → Acti
 - `EC2_INSTANCE_ID` = `i-0fe664678563bae5f`
 
 ## 6. Préparer l'instance (SSH / Session Manager, une fois)
+On réutilise l'utilisateur existant **`django`** (groupe `www-data`) — pas de
+nouvel utilisateur à créer.
 ```bash
-sudo useradd -r -m -d /opt/foxugly -s /bin/bash foxugly
-sudo mkdir -p /opt/foxugly/backend/media && sudo chown -R foxugly:foxugly /opt/foxugly
+sudo mkdir -p /opt/foxugly/backend/media && sudo chown -R django:www-data /opt/foxugly
 sudo apt-get install -y python3-venv libnginx-mod-brotli
 ```
 

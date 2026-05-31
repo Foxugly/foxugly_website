@@ -10,8 +10,8 @@ Wants=foxugly-env.service
 
 [Service]
 Type=simple
-User=foxugly
-Group=foxugly
+User=django
+Group=www-data
 WorkingDirectory=/opt/foxugly/backend
 # Secrets dans /run (tmpfs) : régénérés au boot depuis SSM Parameter Store.
 # /run/foxugly est wipé à chaque reboot → voir foxugly-env.service (DEPLOY.md §2).

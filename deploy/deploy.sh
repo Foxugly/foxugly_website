@@ -8,8 +8,8 @@
 #
 set -euo pipefail
 
-# Backend lancé en tant que foxugly → ownership cohérent (db SQLite, venv, statics).
-sudo -u foxugly bash <<'INNER'
+# Backend lancé en tant que django → ownership cohérent (db SQLite, venv, statics).
+sudo -u django bash <<'INNER'
 set -euo pipefail
 cd /opt/foxugly/backend
 [ -d .venv ] || python3 -m venv .venv

@@ -169,7 +169,7 @@ jobs:
             "aws s3 cp s3://$BUCKET/builds/$BUNDLE /tmp/$BUNDLE --region $AWS_REGION",
             "mkdir -p /opt/foxugly",
             "tar xzf /tmp/$BUNDLE -C /opt/foxugly",
-            "chown -R foxugly:foxugly /opt/foxugly",
+            "chown -R django:www-data /opt/foxugly",
             "bash /opt/foxugly/deploy/deploy.sh",
             "rm -f /tmp/$BUNDLE"
           ]}

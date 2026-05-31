@@ -7,10 +7,10 @@ télécharger et déployer. **Aucune compilation sur le serveur.**
 ```
 Internet ─► nginx (443/80, partagé)
               ├─ foxugly.com → frontend Angular (/opt/foxugly/frontend/dist/frontend/browser)
-              │                + /api /api-auth /admin /static → Gunicorn 127.0.0.1:8001
+              │                + /api /api-auth /admin /static → Gunicorn 127.0.0.1:8003
               │                + /media → /opt/foxugly/backend/media
               └─ quizonline.…  (Gunicorn :8000)
-            Gunicorn foxugly  [systemd: foxugly.service, :8001]
+            Gunicorn foxugly  [systemd: foxugly.service, :8003]
             secrets : /run/foxugly/.env  [systemd: foxugly-env.service ← SSM Parameter Store]
 
 CI (push main) → build front+back → s3://foxugly-deploy/builds/ → SSM → deploy/deploy.sh
@@ -24,10 +24,10 @@ Sur l'instance (déjà gérée par SSM via le rôle `quizonline-ec2`). Pré-requ
 `python3`+`venv`, `nginx`, **AWS CLI** (pour `s3 cp`). Pas besoin de node/git.
 
 ```bash
-# Utilisateur + répertoires (le code arrivera par le bundle, cf. ci-dessous)
-sudo useradd -r -m -d /opt/foxugly -s /bin/bash foxugly
+# Répertoires (le code arrivera par le bundle). On réutilise l'utilisateur
+# existant django (groupe www-data) — pas de useradd.
 sudo mkdir -p /opt/foxugly/backend/media
-sudo chown -R foxugly:foxugly /opt/foxugly
+sudo chown -R django:www-data /opt/foxugly
 ```
 
 Comme tout le code arrive **par le bundle**, l'ordre de bootstrap est :
@@ -43,7 +43,7 @@ Comme tout le code arrive **par le bundle**, l'ordre de bootstrap est :
 LATEST=$(aws s3 ls s3://foxugly-deploy/builds/ --region eu-west-1 | sort | tail -1 | awk '{print $4}')
 aws s3 cp "s3://foxugly-deploy/builds/$LATEST" /tmp/b.tgz --region eu-west-1
 sudo tar xzf /tmp/b.tgz -C /opt/foxugly
-sudo chown -R foxugly:foxugly /opt/foxugly
+sudo chown -R django:www-data /opt/foxugly
 
 # Services (depuis le bundle) + génération de l'env
 sudo cp /opt/foxugly/deploy/foxugly-env.service /etc/systemd/system/
@@ -52,7 +52,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now foxugly-env          # écrit /run/foxugly/.env depuis SSM
 
 # Init base + contenu + admin (une seule fois), env chargé depuis /run
-sudo -u foxugly bash
+sudo -u django bash
   set -a; . /run/foxugly/.env; set +a
   cd /opt/foxugly/backend
   python3 -m venv .venv && . .venv/bin/activate
@@ -63,7 +63,7 @@ sudo -u foxugly bash
   python manage.py collectstatic --noinput
   exit
 
-sudo systemctl enable --now foxugly              # Gunicorn :8001
+sudo systemctl enable --now foxugly              # Gunicorn :8003
 
 # Module brotli (requis par le vhost ; sans lui « nginx -t » échoue)
 sudo apt-get install -y libnginx-mod-brotli      # Ubuntu/Debian (auto-chargé)
@@ -97,7 +97,7 @@ aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_DEBUG --value
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
-aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8001
+aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8003
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 2
 
 # Formulaire de contact via Microsoft Graph (sinon les messages sont seulement stockés)
@@ -139,7 +139,7 @@ aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
   --document-name AWS-RunShellScript --parameters '{"commands":[
     "B=$(aws s3 ls s3://foxugly-deploy/builds/ --region eu-west-1 | sort | tail -1 | awk \"{print \\$4}\")",
     "aws s3 cp s3://foxugly-deploy/builds/$B /tmp/$B --region eu-west-1",
-    "tar xzf /tmp/$B -C /opt/foxugly && chown -R foxugly:foxugly /opt/foxugly",
+    "tar xzf /tmp/$B -C /opt/foxugly && chown -R django:www-data /opt/foxugly",
     "bash /opt/foxugly/deploy/deploy.sh"]}'
 ```
 
@@ -148,7 +148,7 @@ aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
 ## 5. Exploitation
 
 ```bash
-sudo systemctl status foxugly        # Gunicorn foxugly (:8001)
+sudo systemctl status foxugly        # Gunicorn foxugly (:8003)
 sudo journalctl -u foxugly -f        # logs applicatifs
 sudo systemctl restart foxugly
 ```

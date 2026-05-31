@@ -13,9 +13,9 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-# Tourne en root (accès au rôle IAM) mais groupe foxugly : /run/foxugly est créé
-# en root:foxugly 0750 → l'utilisateur foxugly (gunicorn) peut le traverser.
-Group=foxugly
+# Tourne en root (accès au rôle IAM) mais groupe www-data : /run/foxugly est créé
+# en root:www-data 0750 → l'utilisateur django (gunicorn, dans www-data) le traverse.
+Group=www-data
 RuntimeDirectory=foxugly
 RuntimeDirectoryMode=0750
 ExecStart=/usr/bin/bash -c '\
@@ -24,7 +24,7 @@ ExecStart=/usr/bin/bash -c '\
     --with-decryption --recursive --query "Parameters[].[Name,Value]" --output text \
   | while read -r name value; do echo "$(basename "$name")=$value"; done \
   > /run/foxugly/.env'
-ExecStartPost=/usr/bin/chown foxugly:foxugly /run/foxugly/.env
+ExecStartPost=/usr/bin/chown django:www-data /run/foxugly/.env
 
 [Install]
 WantedBy=multi-user.target
