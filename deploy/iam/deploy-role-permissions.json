@@ -2,12 +2,18 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "UploadDeployBundle",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::foxugly-deploy/builds/*"
+    },
+    {
       "Sid": "SendDeployCommand",
       "Effect": "Allow",
       "Action": "ssm:SendCommand",
       "Resource": [
         "arn:aws:ssm:eu-west-1::document/AWS-RunShellScript",
-        "arn:aws:ec2:eu-west-1:<ACCOUNT_ID>:instance/<INSTANCE_ID>"
+        "arn:aws:ec2:eu-west-1:362629935151:instance/<INSTANCE_ID>"
       ]
     },
     {

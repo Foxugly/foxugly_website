@@ -1,91 +1,87 @@
 # Déploiement — foxugly
 
-Architecture cible (1 serveur, tout en **same-origin** pour préserver les cookies
-de session + CSRF) :
+foxugly tourne sur la **même EC2 que quizonline** (t3.small, eu-west-1) et suit le
+**même pattern S3-bundle** : build en CI → bundle dans S3 → SSM dit à l'instance de
+télécharger et déployer. **Aucune compilation sur le serveur.**
 
 ```
-Internet ─► nginx (443/80)
-              ├─ /                 → frontend Angular (dist/frontend/browser)
-              ├─ /api /api-auth /admin /static → Gunicorn (127.0.0.1:8000)
-              └─ /media            → /opt/foxugly/backend/media
-            Gunicorn ─► Django (foxugly.wsgi)  [systemd: foxugly.service]
-```
+Internet ─► nginx (443/80, partagé)
+              ├─ foxugly.com → frontend Angular (/opt/foxugly/frontend/dist/frontend/browser)
+              │                + /api /api-auth /admin /static → Gunicorn 127.0.0.1:8001
+              │                + /media → /opt/foxugly/backend/media
+              └─ quizonline.…  (Gunicorn :8000)
+            Gunicorn foxugly  [systemd: foxugly.service, :8001]
+            secrets : /run/foxugly/.env  [systemd: foxugly-env.service ← SSM Parameter Store]
 
-Le **déploiement est automatique** : un push sur `main` déclenche le workflow
-GitHub Actions (`.github/workflows/deploy.yml`) qui, via **AWS SSM Run Command**,
-exécute `deploy/deploy.sh` sur l'EC2 (git pull → backend → build frontend → restart).
+CI (push main) → build front+back → s3://foxugly-deploy/builds/ → SSM → deploy/deploy.sh
+```
 
 ---
 
-## 1. Pré-requis serveur (EC2, une seule fois)
+## 1. Provisioning (une seule fois)
 
-Cible : **t3.small** (2 vCPU / 2 GiB) en région **eu-west-1**, OS Amazon Linux 2023
-ou Ubuntu 22.04+. Installer : `python3` + `venv`, `git`, `nginx`, `nodejs` + `npm`
-(≥ 20), et l'**agent SSM** (préinstallé sur les AMI Amazon Linux / Ubuntu récentes ;
-sinon installer `amazon-ssm-agent`).
-
-L'instance doit avoir un **rôle IAM** avec la policy `AmazonSSMManagedInstanceCore`
-(pour que SSM puisse y exécuter des commandes).
-
-> **Swap (important sur t3.small)** : 2 GiB de RAM suffisent à faire planter le build
-> Angular (esbuild). Créer 2 GiB de swap une fois pour toutes :
-> ```bash
-> sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
-> sudo mkswap /swapfile && sudo swapon /swapfile
-> echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-> ```
+Sur l'instance (déjà gérée par SSM via le rôle `quizonline-ec2`). Pré-requis :
+`python3`+`venv`, `nginx`, **AWS CLI** (pour `s3 cp`). Pas besoin de node/git.
 
 ```bash
+# Utilisateur + répertoires (le code arrivera par le bundle, cf. ci-dessous)
 sudo useradd -r -m -d /opt/foxugly -s /bin/bash foxugly
-sudo mkdir -p /opt/foxugly && sudo chown foxugly:foxugly /opt/foxugly
-sudo -u foxugly git clone https://github.com/Foxugly/foxugly_website.git /opt/foxugly
+sudo mkdir -p /opt/foxugly/backend/media
+sudo chown -R foxugly:foxugly /opt/foxugly
+```
 
-# Backend : venv + dépendances
-cd /opt/foxugly/backend
-sudo -u foxugly python3 -m venv .venv
-sudo -u foxugly .venv/bin/pip install -r requirements.txt
+Comme tout le code arrive **par le bundle**, l'ordre de bootstrap est :
 
-# Secrets : créer d'abord les paramètres SSM (voir §2), puis générer /run/foxugly/.env
+1. Créer les **paramètres SSM** `/foxugly/prod/*` (§2) et le **bucket + rôles IAM**
+   (`deploy/iam/README.md`), renseigner les **secrets GitHub**.
+2. **Pousser sur `main`** : la CI build et **dépose le bundle** dans S3. (Son étape
+   SSM échouera tant que `foxugly.service` n'est pas installé — normal au 1er coup.)
+3. **Premier déploiement manuel** sur l'instance (récupère le bundle + installe tout) :
+
+```bash
+# Récupère et extrait le dernier bundle
+LATEST=$(aws s3 ls s3://foxugly-deploy/builds/ --region eu-west-1 | sort | tail -1 | awk '{print $4}')
+aws s3 cp "s3://foxugly-deploy/builds/$LATEST" /tmp/b.tgz --region eu-west-1
+sudo tar xzf /tmp/b.tgz -C /opt/foxugly
+sudo chown -R foxugly:foxugly /opt/foxugly
+
+# Services (depuis le bundle) + génération de l'env
 sudo cp /opt/foxugly/deploy/foxugly-env.service /etc/systemd/system/
+sudo cp /opt/foxugly/deploy/foxugly.service     /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now foxugly-env        # écrit /run/foxugly/.env depuis SSM
+sudo systemctl enable --now foxugly-env          # écrit /run/foxugly/.env depuis SSM
 
-# Première initialisation (base + contenu + admin), env chargé depuis /run
+# Init base + contenu + admin (une seule fois), env chargé depuis /run
 sudo -u foxugly bash
   set -a; . /run/foxugly/.env; set +a
   cd /opt/foxugly/backend
-  .venv/bin/python manage.py migrate
-  .venv/bin/python manage.py seed_content      # ⚠ une seule fois (écrase le contenu)
-  .venv/bin/python manage.py createsuperuser
-  .venv/bin/python manage.py collectstatic --noinput
-  # Frontend : build initial
-  cd /opt/foxugly/frontend && npm ci && npm run build
+  python3 -m venv .venv && . .venv/bin/activate
+  pip install -r requirements.txt
+  python manage.py migrate
+  python manage.py seed_content                  # ⚠ une seule fois (écrase le contenu)
+  python manage.py createsuperuser
+  python manage.py collectstatic --noinput
   exit
 
-# Services applicatifs
-sudo cp /opt/foxugly/deploy/foxugly.service /etc/systemd/system/
-sudo systemctl daemon-reload && sudo systemctl enable --now foxugly
+sudo systemctl enable --now foxugly              # Gunicorn :8001
 
-# nginx — le certificat wildcard *.foxugly.com (DNS-01) est déjà en place ;
-# nginx.conf contient directement le bloc 443. Vérifier que ces 2 fichiers existent
-# (créés par certbot ; sinon les générer) :
-#   /etc/letsencrypt/options-ssl-nginx.conf  et  /etc/letsencrypt/ssl-dhparams.pem
+# nginx (vhost foxugly, coexiste avec quizonline ; cert wildcard *.foxugly.com déjà émis)
 sudo cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly
 sudo ln -s /etc/nginx/sites-available/foxugly /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-> `seed_content` **écrase** tout le contenu : à ne lancer qu'à l'initialisation.
+> Ensuite, **chaque push sur `main` déploie tout seul** (build CI → S3 → SSM →
+> `deploy.sh` : pip install → migrate → collectstatic → restart). `seed_content`
+> n'est **jamais** rejoué.
 
 ---
 
 ## 2. Secrets — SSM Parameter Store → `/run/foxugly/.env`
 
-Le `.env` vit dans **`/run/foxugly/`** (tmpfs, effacé au reboot). `foxugly-env.service`
-le **régénère à chaque boot** en lisant les paramètres sous le préfixe `/foxugly/prod/`
-de **SSM Parameter Store**. Voir `backend/.env.example` pour la liste des clés.
+`/run/foxugly/.env` (tmpfs) est régénéré à chaque boot par `foxugly-env.service`,
+qui lit `/foxugly/prod/*`. Créer les paramètres une fois :
 
-Créer les paramètres une fois (depuis un poste autorisé) :
 ```bash
 KEY=$(python -c "from django.core.management.utils import get_random_secret_key as g; print(g())")
 R="--region eu-west-1"
@@ -94,67 +90,52 @@ aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_DEBUG --value
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
-aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 3
+aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8001
+aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 2
 ```
 
-Le **rôle IAM de l'instance** doit autoriser `ssm:GetParametersByPath` sur
-`arn:aws:ssm:eu-west-1:*:parameter/foxugly/prod/*` (+ `kms:Decrypt` pour le SecureString).
-Après modification d'un paramètre : `sudo systemctl restart foxugly-env foxugly`.
+Voir `backend/.env.example` pour la liste. Après modif : `sudo systemctl restart foxugly-env foxugly`.
 
 ---
 
 ## 3. CI/CD — secrets GitHub Actions
 
-Dans **Settings → Secrets and variables → Actions** :
-
 | Secret | Exemple | Rôle |
 |---|---|---|
-| `AWS_DEPLOY_ROLE_ARN` | `arn:aws:iam::123…:role/foxugly-deploy` | rôle assumé par OIDC |
-| `EC2_INSTANCE_ID` | `i-0123456789abcdef0` | instance cible |
+| `AWS_DEPLOY_ROLE_ARN` | `arn:aws:iam::362629935151:role/foxugly-deploy` | rôle assumé par OIDC |
+| `EC2_INSTANCE_ID` | `i-0123456789abcdef0` | instance cible (celle de quizonline) |
 | `AWS_REGION` | `eu-west-1` | **optionnel** (défaut `eu-west-1`) |
 
-Le rôle `AWS_DEPLOY_ROLE_ARN` doit :
-- faire confiance au provider OIDC GitHub (`token.actions.githubusercontent.com`),
-  restreint au dépôt `Foxugly/foxugly_website` ;
-- autoriser `ssm:SendCommand`, `ssm:GetCommandInvocation`, `ssm:ListCommandInvocations`.
-
-➡ **Policies IAM prêtes à coller** (rôle d'instance + rôle de déploiement OIDC) et
-commandes de création : voir **`deploy/iam/`** (`README.md` + 3 fichiers JSON).
-
-Ensuite, **chaque push sur `main` déploie automatiquement**. Déclenchement manuel
-possible via l'onglet *Actions* (workflow_dispatch).
+Création des rôles + bucket : **`deploy/iam/README.md`** (étend `quizonline-ec2`,
+crée `foxugly-deploy` OIDC, bucket `foxugly-deploy`).
 
 ---
 
 ## 4. Déploiement manuel (sans CI)
 
-Via SSM depuis un poste autorisé :
+Le bundle existe déjà en S3 (produit par la CI). Depuis un poste autorisé :
 ```bash
 aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
-  --document-name AWS-RunShellScript \
-  --parameters 'commands=["bash /opt/foxugly/deploy/deploy.sh main"]'
+  --document-name AWS-RunShellScript --parameters '{"commands":[
+    "B=$(aws s3 ls s3://foxugly-deploy/builds/ --region eu-west-1 | sort | tail -1 | awk \"{print \\$4}\")",
+    "aws s3 cp s3://foxugly-deploy/builds/$B /tmp/$B --region eu-west-1",
+    "tar xzf /tmp/$B -C /opt/foxugly && chown -R foxugly:foxugly /opt/foxugly",
+    "bash /opt/foxugly/deploy/deploy.sh"]}'
 ```
-Ou en SSH/Session Manager sur le serveur : `sudo bash /opt/foxugly/deploy/deploy.sh main`.
-
-`deploy.sh` ne lance **que `migrate`** (jamais `seed_content`) : le contenu en base
-est préservé.
 
 ---
 
 ## 5. Exploitation
 
 ```bash
-sudo systemctl status foxugly        # état de Gunicorn
+sudo systemctl status foxugly        # Gunicorn foxugly (:8001)
 sudo journalctl -u foxugly -f        # logs applicatifs
-sudo systemctl restart foxugly       # redémarrage
+sudo systemctl restart foxugly
 ```
 
 ## Notes
-- **Base de données** : SQLite par défaut (suffisant pour ce site). Pour passer à
-  PostgreSQL, adapter `DATABASES` dans `settings.py` (via une var d'env) et installer
-  `psycopg`. Penser à exclure `db.sqlite3` des sauvegardes git (déjà `.gitignore`).
-- **Frontend** : alternative S3 + CloudFront possible, mais il faudrait alors une
-  API sur un autre domaine → cookies cross-site (`SameSite=None; Secure`) + CORS.
-  L'approche nginx same-origin évite ça.
-- **Médias** : `media/` (logos partenaires) vit sur le disque de l'instance ;
-  prévoir une sauvegarde (ou un bucket S3) si l'instance est éphémère.
+- **Base SQLite** dans `/opt/foxugly/backend/db.sqlite3` (hors bundle, persistée
+  entre déploiements). **Médias** dans `/opt/foxugly/backend/media/` (idem). Prévoir
+  une sauvegarde si l'instance est éphémère (ou bucket S3).
+- **Frontend** : buildé en CI et livré dans le bundle ; nginx le sert directement.
+- Passage à **PostgreSQL** possible : adapter `DATABASES` (var d'env) + `psycopg`.

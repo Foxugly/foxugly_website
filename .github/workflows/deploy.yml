@@ -1,10 +1,12 @@
 name: Déploiement
 
-# Déploie sur push vers main (ou manuellement) via AWS SSM Run Command.
-# Le serveur (EC2) exécute deploy/deploy.sh : git pull → backend → frontend → restart.
+# Pattern S3-bundle (comme quizonline) :
+#   build front+back en CI → tar.gz vers s3://foxugly-deploy/builds/
+#   → SSM Run Command : l'EC2 télécharge, extrait, puis lance deploy/deploy.sh.
+# Aucune compilation sur l'instance (t3.small partagée avec quizonline).
 #
 # Secrets requis (Settings → Secrets and variables → Actions) :
-#   AWS_DEPLOY_ROLE_ARN  rôle IAM assumé par OIDC (ssm:SendCommand, ssm:GetCommandInvocation)
+#   AWS_DEPLOY_ROLE_ARN  rôle IAM assumé par OIDC (s3:PutObject, ssm:SendCommand…)
 #   EC2_INSTANCE_ID      ex : i-0123456789abcdef0
 #   AWS_REGION           optionnel (défaut : eu-west-1)
 
@@ -14,33 +16,74 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write   # OIDC pour configure-aws-credentials
+  id-token: write
   contents: read
 
 concurrency:
   group: deploy-prod
   cancel-in-progress: false
 
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'eu-west-1' }}
+  BUCKET: foxugly-deploy
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build du frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build      # → frontend/dist/frontend/browser
+
+      - name: Assemblage du bundle
+        run: |
+          BUNDLE="foxugly-${GITHUB_SHA::7}.tar.gz"
+          echo "BUNDLE=$BUNDLE" >> "$GITHUB_ENV"
+          # backend (source) + frontend déjà buildé + deploy/. node_modules/.venv
+          # /db/media ne sont pas dans le checkout (gitignored) → bundle propre.
+          tar czf "$BUNDLE" backend frontend/dist deploy
+
       - name: Configurer les identifiants AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION || 'eu-west-1' }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Lancer le déploiement via SSM
+      - name: Upload du bundle vers S3
+        run: aws s3 cp "$BUNDLE" "s3://$BUCKET/builds/$BUNDLE"
+
+      - name: Déploiement via SSM
         env:
           INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
         run: |
           set -euo pipefail
+          cat > ssm-params.json <<JSON
+          { "commands": [
+            "set -euo pipefail",
+            "aws s3 cp s3://$BUCKET/builds/$BUNDLE /tmp/$BUNDLE --region $AWS_REGION",
+            "mkdir -p /opt/foxugly",
+            "tar xzf /tmp/$BUNDLE -C /opt/foxugly",
+            "chown -R foxugly:foxugly /opt/foxugly",
+            "bash /opt/foxugly/deploy/deploy.sh",
+            "rm -f /tmp/$BUNDLE"
+          ]}
+          JSON
+
           CMD_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
-            --document-name "AWS-RunShellScript" \
+            --document-name AWS-RunShellScript \
             --comment "Deploy foxugly ${GITHUB_SHA::7}" \
-            --parameters 'commands=["bash /opt/foxugly/deploy/deploy.sh main"]' \
+            --parameters file://ssm-params.json \
             --query "Command.CommandId" --output text)
           echo "SSM CommandId : $CMD_ID"
 

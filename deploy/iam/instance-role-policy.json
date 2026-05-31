@@ -2,23 +2,23 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "ReadFoxuglyParams",
+      "Sid": "ReadAppConfigFromSSM",
       "Effect": "Allow",
       "Action": [
-        "ssm:GetParametersByPath",
+        "ssm:GetParameter",
         "ssm:GetParameters",
-        "ssm:GetParameter"
+        "ssm:GetParametersByPath"
       ],
-      "Resource": "arn:aws:ssm:eu-west-1:<ACCOUNT_ID>:parameter/foxugly/prod/*"
+      "Resource": [
+        "arn:aws:ssm:eu-west-1:362629935151:parameter/foxugly/prod",
+        "arn:aws:ssm:eu-west-1:362629935151:parameter/foxugly/prod/*"
+      ]
     },
     {
-      "Sid": "DecryptSecureStringViaSSM",
+      "Sid": "ReadDeployBundles",
       "Effect": "Allow",
-      "Action": "kms:Decrypt",
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": { "kms:ViaService": "ssm.eu-west-1.amazonaws.com" }
-      }
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::foxugly-deploy/builds/*"
     }
   ]
 }
