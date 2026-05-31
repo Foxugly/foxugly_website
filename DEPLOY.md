@@ -65,6 +65,13 @@ sudo -u foxugly bash
 
 sudo systemctl enable --now foxugly              # Gunicorn :8001
 
+# Module brotli (requis par le vhost ; sans lui « nginx -t » échoue)
+sudo apt-get install -y libnginx-mod-brotli      # Ubuntu/Debian (auto-chargé)
+# Amazon Linux : paquet non dispo → compiler ngx_brotli et ajouter dans nginx.conf :
+#   load_module modules/ngx_http_brotli_filter_module.so;
+#   load_module modules/ngx_http_brotli_static_module.so;
+# (ou retirer les 4 lignes brotli du vhost ; gzip reste actif dans tous les cas.)
+
 # nginx (vhost foxugly, coexiste avec quizonline ; cert wildcard *.foxugly.com déjà émis)
 sudo cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly
 sudo ln -s /etc/nginx/sites-available/foxugly /etc/nginx/sites-enabled/
