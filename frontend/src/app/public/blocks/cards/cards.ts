@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 import { Block } from '../../../core/models';
+import { CARD_COLOR_PALETTE } from '../../../core/block-defaults';
 
 @Component({
   selector: 'app-cards',
@@ -30,6 +31,5 @@ export class Cards {
   @Input() soft = false;
   get c() { return this.block.content; }
 
-  private palette = ['bg-orange', 'bg-violet', 'bg-teal', 'bg-pink'];
-  iconBg(i: number): string { return this.palette[i % this.palette.length]; }
+  iconBg(i: number): string { return CARD_COLOR_PALETTE[i % CARD_COLOR_PALETTE.length]; }
 }

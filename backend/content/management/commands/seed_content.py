@@ -8,6 +8,7 @@ from datetime import date
 
 from django.core.management.base import BaseCommand
 
+from content.defaults import DEFAULT_HERO_CARDS
 from content.models import (
     Block,
     News,
@@ -142,9 +143,7 @@ class Command(BaseCommand):
             "primary_cta": {"label": "Découvrir mon approche", "href": "/agilite"},
             "secondary_cta": {"label": "Voir mes projets", "href": "/projets"},
             "cards": [
-                {"icon": "🚀", "label": "Time-to-market", "value": "−40 % en moyenne"},
-                {"icon": "🤝", "label": "Équipes coachées", "value": "+120 squads"},
-                {"icon": "📈", "label": "Satisfaction", "value": "4,9 / 5"},
+                *DEFAULT_HERO_CARDS,
             ],
         })
         Block.objects.create(page=accueil, block_type=Block.Type.STATS, order=2, content={

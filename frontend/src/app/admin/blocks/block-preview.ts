@@ -1,4 +1,5 @@
 import { Block } from '../../core/models';
+import { HERO_DEFAULT_CARDS, CARD_COLOR_PALETTE } from '../../core/block-defaults';
 
 /** Échappe le texte pour une insertion HTML sûre. */
 function esc(v: unknown): string {
@@ -34,11 +35,7 @@ export function renderBlockHtml(block: Block): string {
         ? `${esc(t.slice(0, i))}<span class="hl">${esc(hi)}</span>${esc(t.slice(i + hi.length))}`
         : esc(t);
       // Liste vide = cartes masquées ; fallback seulement si `cards` indéfini.
-      const cards = (Array.isArray(c.cards) ? c.cards : [
-        { icon: '🚀', label: 'Time-to-market', value: '−40 %' },
-        { icon: '🤝', label: 'Équipes coachées', value: '+120 squads' },
-        { icon: '📈', label: 'Satisfaction', value: '4,9 / 5' },
-      ]).slice(0, 3);
+      const cards = (Array.isArray(c.cards) ? c.cards : HERO_DEFAULT_CARDS).slice(0, 3);
       const cardsHtml = cards.map((cd: any, k: number) =>
         `<div class="float-card fc${k + 1}"><span class="ico">${esc(cd.icon)}</span>` +
         `<div>${esc(cd.label)}<small>${esc(cd.value)}</small></div></div>`).join('');
@@ -67,7 +64,7 @@ export function renderBlockHtml(block: Block): string {
       </div></section>`;
 
     case 'cards': {
-      const palette = ['bg-orange', 'bg-violet', 'bg-teal', 'bg-pink'];
+      const palette = CARD_COLOR_PALETTE;
       const four = (c.items ?? []).length === 4;
       return `<section class="block"><div class="wrap">
         <div class="block-head text-center">

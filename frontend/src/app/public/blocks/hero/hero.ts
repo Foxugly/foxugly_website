@@ -1,14 +1,8 @@
 import { Component, Input } from '@angular/core';
 
 import { Block } from '../../../core/models';
+import { HERO_DEFAULT_CARDS } from '../../../core/block-defaults';
 import { LinkBtn } from '../../link-btn/link-btn';
-
-/** Cartes flottantes par défaut (si le bloc n'en définit pas). */
-const DEFAULT_CARDS = [
-  { icon: '🚀', label: 'Time-to-market', value: '−40 % en moyenne' },
-  { icon: '🤝', label: 'Équipes coachées', value: '+120 squads' },
-  { icon: '📈', label: 'Satisfaction', value: '4,9 / 5' },
-];
 
 @Component({
   selector: 'app-hero',
@@ -51,7 +45,7 @@ export class Hero {
    *  que si la clé `cards` n'a jamais été définie. */
   get cards() {
     const c = this.c?.cards;
-    return Array.isArray(c) ? c.slice(0, 3) : DEFAULT_CARDS;
+    return Array.isArray(c) ? c.slice(0, 3) : HERO_DEFAULT_CARDS;
   }
 
   /** Découpe le titre autour de la sous-chaîne `highlight` (colorée en vert). */

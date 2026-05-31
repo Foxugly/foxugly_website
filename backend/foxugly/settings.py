@@ -4,13 +4,35 @@ Backend headless : sert une API REST consommée par le frontend Angular.
 """
 from pathlib import Path
 import os
+import sys
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Sécurité ---------------------------------------------------------------
-# En production : mettre la clé dans une variable d'environnement et DEBUG=False.
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-change-me-in-production")
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+# Défauts « fail-safe » : DEBUG=False par défaut (à activer explicitement en dev
+# via DJANGO_DEBUG=True), et jamais la clé de dev prévisible en production.
+DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
+_RUNNING_TESTS = "test" in sys.argv
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG or _RUNNING_TESTS:
+        SECRET_KEY = "dev-insecure-change-me-in-production"
+    else:
+        # Production sans clé explicite : on en génère une aléatoire (jamais
+        # prévisible) plutôt que de tourner sur une valeur connue. Les sessions
+        # sont invalidées à chaque redémarrage tant que DJANGO_SECRET_KEY n'est
+        # pas défini → à corriger en priorité (voir warning ci-dessous).
+        import secrets
+        import warnings
+
+        SECRET_KEY = secrets.token_urlsafe(64)
+        warnings.warn(
+            "DJANGO_SECRET_KEY non défini en production : clé aléatoire générée. "
+            "Définissez DJANGO_SECRET_KEY pour des sessions stables.",
+            RuntimeWarning,
+        )
+
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # --- Applications -----------------------------------------------------------

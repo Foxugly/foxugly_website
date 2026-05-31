@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Block } from '../../../core/models';
 import { ContentService } from '../../../core/content.service';
 
+/** Validation email légère (le backend revalide via EmailField). */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type FieldErrors = { name?: string; email?: string; message?: string };
+
 @Component({
   selector: 'app-contact-form',
   imports: [FormsModule],
@@ -23,14 +28,20 @@ import { ContentService } from '../../../core/content.service';
             <p style="color:var(--ink-soft);">{{ confirmation() }}</p>
           </div>
         } @else {
-          <form class="form-card" (ngSubmit)="submit()">
+          <form class="form-card" novalidate (ngSubmit)="submit()">
             <div class="field">
               <label for="cf-name">Nom</label>
-              <input id="cf-name" name="name" [(ngModel)]="model.name" required autocomplete="name" />
+              <input id="cf-name" name="name" [(ngModel)]="model.name" (ngModelChange)="clear('name')"
+                     autocomplete="name" [attr.aria-invalid]="!!errors().name"
+                     [attr.aria-describedby]="errors().name ? 'cf-name-err' : null" />
+              @if (errors().name) { <span id="cf-name-err" class="field-error">{{ errors().name }}</span> }
             </div>
             <div class="field">
               <label for="cf-email">Email</label>
-              <input id="cf-email" name="email" type="email" [(ngModel)]="model.email" required autocomplete="email" />
+              <input id="cf-email" name="email" type="email" [(ngModel)]="model.email" (ngModelChange)="clear('email')"
+                     autocomplete="email" [attr.aria-invalid]="!!errors().email"
+                     [attr.aria-describedby]="errors().email ? 'cf-email-err' : null" />
+              @if (errors().email) { <span id="cf-email-err" class="field-error">{{ errors().email }}</span> }
             </div>
             <div class="field">
               <label for="cf-subject">Sujet (optionnel)</label>
@@ -38,10 +49,13 @@ import { ContentService } from '../../../core/content.service';
             </div>
             <div class="field">
               <label for="cf-message">Message</label>
-              <textarea id="cf-message" name="message" rows="5" [(ngModel)]="model.message" required></textarea>
+              <textarea id="cf-message" name="message" rows="5" [(ngModel)]="model.message" (ngModelChange)="clear('message')"
+                        [attr.aria-invalid]="!!errors().message"
+                        [attr.aria-describedby]="errors().message ? 'cf-message-err' : null"></textarea>
+              @if (errors().message) { <span id="cf-message-err" class="field-error">{{ errors().message }}</span> }
             </div>
 
-            @if (error()) { <p style="color:#dc2626; font-size:.9rem; margin-bottom:1rem;">{{ error() }}</p> }
+            @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
 
             <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;"
                     [disabled]="loading()">
@@ -64,12 +78,27 @@ export class ContactForm {
   protected sent = signal(false);
   protected error = signal('');
   protected confirmation = signal('');
+  protected errors = signal<FieldErrors>({});
+
+  /** Efface l'erreur d'un champ dès que l'utilisateur le corrige. */
+  clear(field: keyof FieldErrors) {
+    if (this.errors()[field]) this.errors.update(e => ({ ...e, [field]: undefined }));
+  }
+
+  private validate(): FieldErrors {
+    const e: FieldErrors = {};
+    if (!this.model.name.trim()) e.name = 'Le nom est requis.';
+    if (!this.model.email.trim()) e.email = 'L’email est requis.';
+    else if (!EMAIL_RE.test(this.model.email.trim())) e.email = 'Format d’email invalide.';
+    if (!this.model.message.trim()) e.message = 'Le message est requis.';
+    return e;
+  }
 
   submit() {
-    if (!this.model.name || !this.model.email || !this.model.message) {
-      this.error.set('Merci de remplir le nom, l’email et le message.');
-      return;
-    }
+    const errs = this.validate();
+    this.errors.set(errs);
+    if (Object.values(errs).some(Boolean)) return;
+
     this.error.set('');
     this.loading.set(true);
     this.content.sendContact(this.model).subscribe({

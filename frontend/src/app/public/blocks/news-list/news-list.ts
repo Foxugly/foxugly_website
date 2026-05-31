@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { Block, News } from '../../../core/models';
 import { ContentService } from '../../../core/content.service';
+import { NEWS_CATEGORY_TAG } from '../../../core/block-defaults';
 
 @Component({
   selector: 'app-news-list',
@@ -43,7 +44,6 @@ export class NewsList implements OnInit {
   ngOnInit() { this.news$ = this.content.news(this.c.limit || undefined); }
 
   tagClass(category: string): string {
-    const map: Record<string, string> = { 'Événement': 'orange', 'Article': 'teal', 'Atelier': 'indigo' };
-    return map[category] ?? '';
+    return NEWS_CATEGORY_TAG[category] ?? '';
   }
 }

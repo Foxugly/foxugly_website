@@ -50,8 +50,12 @@ class PageDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_blocks(self, obj):
-        qs = obj.blocks.filter(is_visible=True).order_by("order", "id")
-        return BlockSerializer(qs, many=True).data
+        # Utilise le prefetch `visible_blocks` (PageViewSet.retrieve) s'il existe,
+        # sinon requête directe (création/màj, ou usage hors de ce viewset).
+        blocks = getattr(obj, "visible_blocks", None)
+        if blocks is None:
+            blocks = obj.blocks.filter(is_visible=True).order_by("order", "id")
+        return BlockSerializer(blocks, many=True).data
 
 
 class NewsSerializer(serializers.ModelSerializer):
@@ -87,6 +91,12 @@ class TestimonialSerializer(serializers.ModelSerializer):
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
+    # Force une vraie validation d'email et des champs requis non vides.
+    email = serializers.EmailField()
+    name = serializers.CharField(max_length=200)
+    message = serializers.CharField()
+    subject = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = ContactMessage
         fields = ["name", "email", "subject", "message"]

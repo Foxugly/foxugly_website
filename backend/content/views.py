@@ -4,6 +4,8 @@ import os
 
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.core import signing
+from django.db import transaction
+from django.db.models import Prefetch
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status, viewsets
@@ -54,6 +56,16 @@ class PageViewSet(viewsets.ModelViewSet):
         # Le public ne voit que les pages publiées ; l'admin voit tout.
         if not self.request.user.is_staff:
             qs = qs.filter(is_published=True)
+        # Sur le détail, on précharge les blocs visibles ordonnés en une requête
+        # (le sérialiseur lit l'attribut `visible_blocks`).
+        if self.action == "retrieve":
+            qs = qs.prefetch_related(
+                Prefetch(
+                    "blocks",
+                    queryset=Block.objects.filter(is_visible=True).order_by("order", "id"),
+                    to_attr="visible_blocks",
+                )
+            )
         return qs
 
 
@@ -85,8 +97,11 @@ class BlockViewSet(viewsets.ModelViewSet):
                 {"detail": "Format attendu : [{id, order}, …] avec des entiers."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        for pk, order in cleaned:
-            Block.objects.filter(pk=pk).update(order=order)
+        # Atomique : tout l'ordre est appliqué ou rien (évite un ordre corrompu
+        # en cas d'édition concurrente ou d'erreur en cours de boucle).
+        with transaction.atomic():
+            for pk, order in cleaned:
+                Block.objects.filter(pk=pk).update(order=order)
         return Response({"status": "ok"})
 
 

@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, shareReplay } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay } from 'rxjs';
 
 import { API_BASE } from './api.config';
 import {
@@ -74,6 +74,14 @@ export class ContentService {
   private list<T>(resource: string, params?: HttpParams): Observable<T[]> {
     return this.http
       .get<Paginated<T>>(`${API_BASE}/${resource}/`, { ...this.opts, params })
-      .pipe(map(r => r.results ?? (r as unknown as T[])));
+      .pipe(
+        map(r => r.results ?? (r as unknown as T[])),
+        // Une collection indisponible ne doit pas casser la page : on dégrade
+        // vers une liste vide en traçant l'erreur (visible en console / Sentry).
+        catchError(err => {
+          console.error(`Chargement de « ${resource} » impossible :`, err);
+          return of([] as T[]);
+        }),
+      );
   }
 }
