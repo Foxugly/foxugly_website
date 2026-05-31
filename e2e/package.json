@@ -1,0 +1,13 @@
+{
+  "name": "foxugly-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tests end-to-end (Playwright) du site foxugly.",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

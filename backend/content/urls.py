@@ -8,6 +8,8 @@ from .views import (
     ContactView,
     LoginView,
     LogoutView,
+    MagicLinkLoginView,
+    MagicLinkRequestView,
     NewsViewSet,
     PageViewSet,
     PartnerViewSet,
@@ -29,6 +31,8 @@ urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="auth-login"),
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
     path("auth/me/", AuthMeView.as_view(), name="auth-me"),
+    path("auth/magic-link/", MagicLinkRequestView.as_view(), name="auth-magic-link"),
+    path("auth/magic-login/", MagicLinkLoginView.as_view(), name="auth-magic-login"),
     path("contact/", ContactView.as_view(), name="contact"),
     path("", include(router.urls)),
 ]

@@ -1,7 +1,9 @@
 """Vues API. Lecture publique, écriture réservée aux utilisateurs connectés."""
 import logging
+import os
 
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.core import signing
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status, viewsets
@@ -10,7 +12,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .email import graph_configured, send_contact_email
+from .email import graph_configured, send_contact_email, send_login_link
 from .models import (
     Block,
     ContactMessage,
@@ -215,6 +217,64 @@ class LogoutView(APIView):
     def post(self, request):
         logout(request)
         return Response({"detail": "Déconnecté."})
+
+
+MAGIC_SALT = "foxugly.magic-login"
+MAGIC_MAX_AGE = 900  # 15 minutes
+
+
+class MagicLinkRequestView(APIView):
+    """Demande un lien de connexion par email (staff uniquement)."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip()
+        user = (
+            get_user_model().objects
+            .filter(email__iexact=email, is_staff=True, is_active=True)
+            .first()
+        )
+        if user:
+            token = signing.dumps({"uid": user.pk, "ll": str(user.last_login)}, salt=MAGIC_SALT)
+            base = os.environ.get("SITE_URL", "https://www.foxugly.com").rstrip("/")
+            link = f"{base}/admin/magic?token={token}"
+            try:
+                if graph_configured():
+                    send_login_link(user.email, link)
+                else:
+                    logger.warning("Magic link (Graph non configuré) pour %s : %s", email, link)
+            except Exception:  # noqa: BLE001
+                logger.exception("Échec d'envoi du magic link à %s", email)
+        # Réponse identique que le compte existe ou non (anti-énumération).
+        return Response({"detail": "Si un compte staff correspond, un lien a été envoyé."})
+
+
+class MagicLinkLoginView(APIView):
+    """Connexion via un token de magic link (signé, 15 min, usage unique)."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            data = signing.loads(request.data.get("token") or "", salt=MAGIC_SALT, max_age=MAGIC_MAX_AGE)
+        except signing.SignatureExpired:
+            return Response({"detail": "Lien expiré, redemandez-en un."}, status=status.HTTP_400_BAD_REQUEST)
+        except signing.BadSignature:
+            return Response({"detail": "Lien invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = (
+            get_user_model().objects
+            .filter(pk=data.get("uid"), is_staff=True, is_active=True)
+            .first()
+        )
+        # Usage unique : le token encode le last_login d'alors ; la connexion le met
+        # à jour, donc un token déjà utilisé ne correspond plus.
+        if not user or str(user.last_login) != data.get("ll"):
+            return Response({"detail": "Lien déjà utilisé ou invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+        login(request, user)
+        return Response(_user_payload(user))
 
 
 class ContactView(APIView):

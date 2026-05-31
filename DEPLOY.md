@@ -107,6 +107,9 @@ aws ssm put-parameter $R --type SecureString --name /foxugly/prod/GRAPH_CLIENT_S
 aws ssm put-parameter $R --type String       --name /foxugly/prod/GRAPH_SENDER       --value contact@foxugly.com
 aws ssm put-parameter $R --type String       --name /foxugly/prod/CONTACT_RECIPIENT  --value contact@foxugly.com
 
+# Magic link (lien de connexion par email) — base d'URL des liens
+aws ssm put-parameter $R --type String       --name /foxugly/prod/SITE_URL           --value https://www.foxugly.com
+
 # Sentry (optionnel) :  /foxugly/prod/SENTRY_DSN
 # PostgreSQL (optionnel) : /foxugly/prod/DJANGO_DB_ENGINE=postgresql + DJANGO_DB_*  (voir .env.example)
 ```

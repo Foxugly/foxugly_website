@@ -35,15 +35,34 @@ import { AuthService } from '../../core/auth.service';
                 [disabled]="loading()">
           {{ loading() ? 'Connexion…' : 'Se connecter' }}
         </button>
+
+        <div class="magic-sep"><span>ou</span></div>
+
+        @if (magicSent()) {
+          <p class="muted-note" style="text-align:center;">
+            Si un compte staff correspond, un lien de connexion vient d'être envoyé par email.
+          </p>
+        } @else {
+          <div class="field">
+            <label for="me">Lien de connexion par email</label>
+            <input id="me" name="magicEmail" type="email" [(ngModel)]="magicEmail"
+                   autocomplete="email" placeholder="vous@foxugly.com" />
+          </div>
+          <button type="button" class="btn btn-outline" style="width:100%; justify-content:center;"
+                  [disabled]="magicLoading()" (click)="requestMagic()">
+            {{ magicLoading() ? 'Envoi…' : 'Recevoir un lien magique' }}
+          </button>
+        }
       </form>
     </div>
   `,
   styles: [`
-    .admin-login {
-      min-height: 100vh; display: grid; place-items: center; padding: 2rem;
-      background: linear-gradient(160deg, #1b1a30 0%, #2a2942 100%);
-    }
+    .admin-login { min-height: 100vh; display: grid; place-items: center; padding: 2rem;
+      background: linear-gradient(160deg, #1b1a30 0%, #2a2942 100%); }
     .admin-login .form-card { width: min(420px, 100%); }
+    .magic-sep { display: flex; align-items: center; gap: .8rem; color: var(--muted);
+      font-size: .8rem; margin: 1.3rem 0; }
+    .magic-sep::before, .magic-sep::after { content: ""; flex: 1; height: 1px; background: var(--line); }
   `],
 })
 export class Login {
@@ -55,6 +74,10 @@ export class Login {
   protected loading = signal(false);
   protected error = signal('');
 
+  protected magicEmail = '';
+  protected magicLoading = signal(false);
+  protected magicSent = signal(false);
+
   submit() {
     this.error.set('');
     this.loading.set(true);
@@ -64,6 +87,16 @@ export class Login {
         this.error.set(e?.error?.detail ?? 'Connexion impossible. Réessaie.');
         this.loading.set(false);
       },
+    });
+  }
+
+  requestMagic() {
+    if (!this.magicEmail) { this.error.set('Saisis ton email.'); return; }
+    this.error.set('');
+    this.magicLoading.set(true);
+    this.auth.requestMagicLink(this.magicEmail).subscribe({
+      next: () => { this.magicSent.set(true); this.magicLoading.set(false); },
+      error: () => { this.magicSent.set(true); this.magicLoading.set(false); },  // même UX (anti-énumération)
     });
   }
 }

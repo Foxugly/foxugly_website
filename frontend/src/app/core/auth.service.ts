@@ -40,4 +40,16 @@ export class AuthService {
       .post(`${API_BASE}/auth/logout/`, {}, this.opts)
       .pipe(tap(() => this._user.set({ is_authenticated: false, username: null, is_staff: false })));
   }
+
+  /** Demande l'envoi d'un lien de connexion par email (staff). */
+  requestMagicLink(email: string): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(`${API_BASE}/auth/magic-link/`, { email }, this.opts);
+  }
+
+  /** Connecte à partir d'un token de magic link. */
+  magicLogin(token: string): Observable<AuthUser> {
+    return this.http
+      .post<AuthUser>(`${API_BASE}/auth/magic-login/`, { token }, this.opts)
+      .pipe(tap(u => this._user.set(u)));
+  }
 }
