@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from .models import (
     Block,
+    ContactMessage,
     News,
     Page,
     Partner,
@@ -83,6 +84,12 @@ class TestimonialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testimonial
         fields = ["id", "quote", "author", "role", "initials", "order", "is_published"]
+
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ["name", "email", "subject", "message"]
 
 
 class SiteSettingsSerializer(serializers.ModelSerializer):

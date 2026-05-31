@@ -14,6 +14,7 @@ import { NewsList } from '../blocks/news-list/news-list';
 import { ProjectList } from '../blocks/project-list/project-list';
 import { PartnerList } from '../blocks/partner-list/partner-list';
 import { Cta } from '../blocks/cta/cta';
+import { ContactForm } from '../blocks/contact-form/contact-form';
 
 /**
  * Aiguille chaque bloc vers le composant dédié à son `block_type`.
@@ -23,7 +24,7 @@ import { Cta } from '../blocks/cta/cta';
   selector: 'app-block-renderer',
   imports: [
     Hero, PageHero, Stats, Cards, Richtext, Timeline, Accordion,
-    Testimonials, LogoWall, NewsList, ProjectList, PartnerList, Cta,
+    Testimonials, LogoWall, NewsList, ProjectList, PartnerList, Cta, ContactForm,
   ],
   template: `
     @switch (block.block_type) {
@@ -40,6 +41,7 @@ import { Cta } from '../blocks/cta/cta';
       @case ('project_list') { <app-project-list [block]="block" [soft]="soft" /> }
       @case ('partner_list') { <app-partner-list [block]="block" [soft]="soft" /> }
       @case ('cta') { <app-cta [block]="block" /> }
+      @case ('contact_form') { <app-contact-form [block]="block" [soft]="soft" /> }
     }
   `,
 })

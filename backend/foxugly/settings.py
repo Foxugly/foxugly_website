@@ -62,13 +62,28 @@ TEMPLATES = [
 WSGI_APPLICATION = "foxugly.wsgi.application"
 
 # --- Base de données --------------------------------------------------------
-# SQLite par défaut pour démarrer vite. Passer à PostgreSQL en production.
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# Pilotée par l'environnement. SQLite par défaut ; PostgreSQL si
+# DJANGO_DB_ENGINE=postgresql (nécessite psycopg, voir requirements.txt).
+_DB_ENGINE = os.environ.get("DJANGO_DB_ENGINE", "sqlite3").lower()
+if _DB_ENGINE in ("postgresql", "postgres", "psql"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DJANGO_DB_NAME", "foxugly"),
+            "USER": os.environ.get("DJANGO_DB_USER", "foxugly"),
+            "PASSWORD": os.environ.get("DJANGO_DB_PASSWORD", ""),
+            "HOST": os.environ.get("DJANGO_DB_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("DJANGO_DB_PORT", "5432"),
+            "CONN_MAX_AGE": int(os.environ.get("DJANGO_DB_CONN_MAX_AGE", "60")),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.environ.get("DJANGO_DB_NAME", str(BASE_DIR / "db.sqlite3")),
+        }
+    }
 
 # --- Validation des mots de passe ------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [

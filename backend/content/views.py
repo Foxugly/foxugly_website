@@ -1,4 +1,6 @@
 """Vues API. Lecture publique, écriture réservée aux utilisateurs connectés."""
+import logging
+
 from django.contrib.auth import authenticate, login, logout
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -8,8 +10,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .email import graph_configured, send_contact_email
 from .models import (
     Block,
+    ContactMessage,
     News,
     Page,
     Partner,
@@ -19,6 +23,7 @@ from .models import (
 )
 from .serializers import (
     BlockSerializer,
+    ContactMessageSerializer,
     NewsSerializer,
     PageDetailSerializer,
     PageSerializer,
@@ -27,6 +32,8 @@ from .serializers import (
     SiteSettingsSerializer,
     TestimonialSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PageViewSet(viewsets.ModelViewSet):
@@ -208,3 +215,31 @@ class LogoutView(APIView):
     def post(self, request):
         logout(request)
         return Response({"detail": "Déconnecté."})
+
+
+class ContactView(APIView):
+    """Formulaire de contact public : stocke le message puis l'envoie via Graph."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ContactMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        msg = serializer.save()   # message persisté (jamais perdu)
+
+        try:
+            if graph_configured():
+                send_contact_email(msg.name, msg.email, msg.subject, msg.message)
+                msg.sent = True
+            else:
+                msg.error = "Graph non configuré (message seulement stocké)."
+            msg.save(update_fields=["sent", "error"])
+        except Exception as exc:  # noqa: BLE001 — message déjà stocké, on trace l'échec
+            msg.error = str(exc)[:500]
+            msg.save(update_fields=["error"])
+            logger.exception("Échec d'envoi du message de contact #%s", msg.pk)
+
+        return Response(
+            {"detail": "Merci, votre message a bien été reçu."},
+            status=status.HTTP_201_CREATED,
+        )

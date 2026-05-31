@@ -125,6 +125,11 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
     { key: 'text', label: 'Texte', kind: 'textarea' },
     cta('cta', 'Bouton'),
   ],
+  contact_form: [
+    { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
+    { key: 'title', label: 'Titre', kind: 'text' },
+    { key: 'lead', label: 'Accroche', kind: 'textarea' },
+  ],
 };
 
 /** Libellés lisibles des types de blocs (pour le sélecteur « + bloc »). */
@@ -142,6 +147,7 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   project_list: 'Liste de projets',
   partner_list: 'Liste clients / associations',
   cta: 'Appel à l’action',
+  contact_form: 'Formulaire de contact',
 };
 
 /** Construit un `content` vide conforme au schéma (pour un nouveau bloc). */

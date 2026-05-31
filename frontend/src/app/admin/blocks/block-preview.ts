@@ -127,6 +127,21 @@ export function renderBlockHtml(block: Block): string {
         ${c.cta?.label ? `<a class="btn btn-ghost">${esc(c.cta.label)}</a>` : ''}
       </div></div></section>`;
 
+    case 'contact_form':
+      return `<section class="block"><div class="wrap">
+        <div class="block-head text-center">
+          ${c.eyebrow ? `<span class="eyebrow">${esc(c.eyebrow)}</span>` : ''}
+          <h2 class="section-title">${esc(c.title || 'Me contacter')}</h2>
+          ${c.lead ? `<p class="section-lead center-block">${esc(c.lead)}</p>` : ''}
+        </div>
+        <div class="form-card">
+          <div class="field"><label>Nom</label><input disabled /></div>
+          <div class="field"><label>Email</label><input disabled /></div>
+          <div class="field"><label>Message</label><textarea rows="4" disabled></textarea></div>
+          <a class="btn btn-primary" style="width:100%; justify-content:center;">Envoyer le message</a>
+        </div>
+      </div></section>`;
+
     case 'testimonials':
       return `<section class="block"><div class="wrap">${dynamicNote(c, 'Témoignages')}</div></section>`;
     case 'news_list':

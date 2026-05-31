@@ -4,7 +4,7 @@ import { Observable, map, shareReplay } from 'rxjs';
 
 import { API_BASE } from './api.config';
 import {
-  News, PageDetail, PageNav, Paginated, Partner, Project,
+  ContactPayload, News, PageDetail, PageNav, Paginated, Partner, Project,
   SiteSettings, Testimonial,
 } from './models';
 
@@ -64,6 +64,11 @@ export class ContentService {
   testimonials(limit?: number): Observable<Testimonial[]> {
     return this.list<Testimonial>('testimonials')
       .pipe(map(r => limit ? r.slice(0, limit) : r));
+  }
+
+  /** Envoie un message via le formulaire de contact public. */
+  sendContact(payload: ContactPayload): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(`${API_BASE}/contact/`, payload, this.opts);
   }
 
   private list<T>(resource: string, params?: HttpParams): Observable<T[]> {

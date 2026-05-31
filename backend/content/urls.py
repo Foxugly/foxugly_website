@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AuthMeView,
     BlockViewSet,
+    ContactView,
     LoginView,
     LogoutView,
     NewsViewSet,
@@ -28,5 +29,6 @@ urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="auth-login"),
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
     path("auth/me/", AuthMeView.as_view(), name="auth-me"),
+    path("contact/", ContactView.as_view(), name="contact"),
     path("", include(router.urls)),
 ]

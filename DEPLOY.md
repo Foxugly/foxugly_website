@@ -92,6 +92,16 @@ aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8001
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 2
+
+# Formulaire de contact via Microsoft Graph (sinon les messages sont seulement stockés)
+aws ssm put-parameter $R --type String       --name /foxugly/prod/GRAPH_TENANT_ID    --value <tenant>
+aws ssm put-parameter $R --type String       --name /foxugly/prod/GRAPH_CLIENT_ID    --value <client-id>
+aws ssm put-parameter $R --type SecureString --name /foxugly/prod/GRAPH_CLIENT_SECRET --value <secret>
+aws ssm put-parameter $R --type String       --name /foxugly/prod/GRAPH_SENDER       --value contact@foxugly.com
+aws ssm put-parameter $R --type String       --name /foxugly/prod/CONTACT_RECIPIENT  --value contact@foxugly.com
+
+# Sentry (optionnel) :  /foxugly/prod/SENTRY_DSN
+# PostgreSQL (optionnel) : /foxugly/prod/DJANGO_DB_ENGINE=postgresql + DJANGO_DB_*  (voir .env.example)
 ```
 
 Voir `backend/.env.example` pour la liste. Après modif : `sudo systemctl restart foxugly-env foxugly`.

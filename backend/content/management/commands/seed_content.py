@@ -165,11 +165,11 @@ class Command(BaseCommand):
                                       "limit": 3})
         Block.objects.create(page=accueil, block_type=Block.Type.PROJECT_LIST, order=5, content={
             "eyebrow": "Réalisations", "title": "Des transformations qui tiennent", "limit": 3})
-        Block.objects.create(page=accueil, block_type=Block.Type.CTA, order=6, anchor="contact",
-                             content={"title": "Prêt à rendre votre organisation vraiment agile ?",
-                                      "text": "Parlons de votre contexte. Un premier échange de "
-                                              "30 minutes, sans engagement.",
-                                      "cta": {"label": "Prendre rendez-vous", "href": "mailto:contact@foxugly.com"}})
+        Block.objects.create(page=accueil, block_type=Block.Type.CONTACT_FORM, order=6, anchor="contact",
+                             content={"eyebrow": "Contact",
+                                      "title": "Parlons de votre contexte",
+                                      "lead": "Un premier échange de 30 minutes, sans engagement. "
+                                              "Décrivez votre besoin, je vous réponds rapidement."})
 
         # Qui suis-je
         qsj = Page.objects.create(slug="qui-suis-je", title="Qui suis-je", nav_label="Qui suis-je", order=2)

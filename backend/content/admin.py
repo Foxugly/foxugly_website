@@ -8,6 +8,7 @@ from django.contrib import admin
 
 from .models import (
     Block,
+    ContactMessage,
     News,
     Page,
     Partner,
@@ -72,6 +73,17 @@ class TestimonialAdmin(admin.ModelAdmin):
     list_display = ("author", "role", "order", "is_published")
     list_editable = ("order", "is_published")
     search_fields = ("author", "quote")
+
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ("name", "email", "subject", "created_at", "sent")
+    list_filter = ("sent", "created_at")
+    search_fields = ("name", "email", "subject", "message")
+    readonly_fields = ("name", "email", "subject", "message", "created_at", "sent", "error")
+
+    def has_add_permission(self, request):
+        return False   # créés uniquement via le formulaire public
 
 
 @admin.register(SiteSettings)

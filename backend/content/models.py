@@ -82,6 +82,7 @@ class Block(models.Model):
         PROJECT_LIST = "project_list", "Liste de projets"
         PARTNER_LIST = "partner_list", "Liste clients / associations"
         CTA = "cta", "Appel à l'action"
+        CONTACT_FORM = "contact_form", "Formulaire de contact"
 
     page = models.ForeignKey(Page, related_name="blocks", on_delete=models.CASCADE)
     block_type = models.CharField("Type de bloc", max_length=30, choices=Type.choices)
@@ -184,3 +185,23 @@ class Testimonial(models.Model):
 
     def __str__(self):
         return f"{self.author} — {self.quote[:40]}…"
+
+
+class ContactMessage(models.Model):
+    """Message reçu via le formulaire de contact (stocké puis envoyé par email)."""
+
+    name = models.CharField("Nom", max_length=120)
+    email = models.EmailField("Email")
+    subject = models.CharField("Sujet", max_length=200, blank=True)
+    message = models.TextField("Message")
+    created_at = models.DateTimeField("Reçu le", auto_now_add=True)
+    sent = models.BooleanField("Email envoyé", default=False)
+    error = models.TextField("Erreur d'envoi", blank=True)
+
+    class Meta:
+        verbose_name = "Message de contact"
+        verbose_name_plural = "Messages de contact"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} <{self.email}>"

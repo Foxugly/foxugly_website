@@ -45,7 +45,14 @@ export interface Block {
 export type BlockType =
   | 'hero' | 'page_hero' | 'richtext' | 'stats' | 'cards' | 'timeline'
   | 'accordion' | 'testimonials' | 'logo_wall' | 'news_list'
-  | 'project_list' | 'partner_list' | 'cta';
+  | 'project_list' | 'partner_list' | 'cta' | 'contact_form';
+
+export interface ContactPayload {
+  name: string;
+  email: string;
+  subject?: string;
+  message: string;
+}
 
 /* ---- Collections ---- */
 
