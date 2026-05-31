@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
+import { FileUpload, FileSelectEvent } from 'primeng/fileupload';
 
 import { AdminApiService, CollectionName } from '../../core/admin-api.service';
 
@@ -67,7 +68,7 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
 
 @Component({
   selector: 'app-admin-collection-editor',
-  imports: [FormsModule],
+  imports: [FormsModule, FileUpload],
   template: `
     <div class="admin-head">
       <div><h1>{{ config().title }}</h1><p class="sub">{{ rows().length }} élément(s).</p></div>
@@ -144,7 +145,10 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
                         <span class="logo-thumb empty">—</span>
                       }
                       <div>
-                        <input type="file" accept="image/*" (change)="onFile($event)" />
+                        <p-fileUpload mode="basic" chooseLabel="Choisir un logo" chooseIcon="pi pi-upload"
+                          accept="image/*" [auto]="false" [customUpload]="true"
+                          [chooseButtonProps]="{ severity: 'secondary', outlined: true }"
+                          (onSelect)="onPrimeSelect($event)" (onClear)="resetFile()" />
                         @if (draftFile()) {
                           <p class="muted-note">
                             {{ draftFile()!.name }} — enregistré à la validation.
@@ -212,8 +216,8 @@ export class CollectionEditor {
     this.filePreview.set(null);
   }
 
-  onFile(ev: Event) {
-    const file = (ev.target as HTMLInputElement).files?.[0] ?? null;
+  onPrimeSelect(event: FileSelectEvent) {
+    const file = event.currentFiles?.[0] ?? null;
     this.resetFile();
     if (file) {
       this.draftFile.set(file);
