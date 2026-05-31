@@ -13,7 +13,7 @@
       "Action": "ssm:SendCommand",
       "Resource": [
         "arn:aws:ssm:eu-west-1::document/AWS-RunShellScript",
-        "arn:aws:ec2:eu-west-1:362629935151:instance/<INSTANCE_ID>"
+        "arn:aws:ec2:eu-west-1:362629935151:instance/i-0fe664678563bae5f"
       ]
     },
     {

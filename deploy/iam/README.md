@@ -10,10 +10,8 @@ Deux choses à faire :
 2. **Créer le rôle CI `foxugly-deploy`** (OIDC GitHub) pour uploader le bundle et
    déclencher SSM.
 
-Remplacer `<INSTANCE_ID>` dans `deploy-role-permissions.json` :
-```bash
-sed -i "s/<INSTANCE_ID>/i-0123456789abcdef0/g" deploy/iam/deploy-role-permissions.json
-```
+L'instance cible (`i-0fe664678563bae5f`) et le compte sont déjà renseignés dans les
+fichiers JSON — rien à substituer.
 
 ## 0. Bucket S3 des bundles (une fois)
 
