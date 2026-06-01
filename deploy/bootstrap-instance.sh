@@ -41,11 +41,17 @@ systemctl enable --now foxugly              # Gunicorn :8004
 
 echo "== nginx =="
 # Pattern sites-available + symlink sites-enabled (cohérent avec les autres sites
-# de la box). On nettoie l'ancien chemin conf.d et le 444-trap zombie www.
-cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly.com
-ln -sf /etc/nginx/sites-available/foxugly.com /etc/nginx/sites-enabled/foxugly.com
+# de la box). Nom du vhost = hostname de SITE_URL (déjà chargé depuis SSM par
+# foxugly-env.service dans /run/foxugly/.env ; pas de second appel SSM).
+SITE_URL=$(grep -m1 '^SITE_URL=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
+DOMAIN="${SITE_URL#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
+[ -n "$DOMAIN" ] || DOMAIN=foxugly.com
+# Nettoyage AVANT la pose du symlink (anti auto-suppression si DOMAIN=www.foxugly.com)
+# + anciens chemins (conf.d, zombie 444 www, ex-fichiers "foxugly").
 rm -f /etc/nginx/conf.d/foxugly.conf /etc/nginx/sites-enabled/www.foxugly.com \
       /etc/nginx/sites-enabled/foxugly /etc/nginx/sites-available/foxugly
+cp /opt/foxugly/deploy/nginx.conf "/etc/nginx/sites-available/${DOMAIN}"
+ln -sf "/etc/nginx/sites-available/${DOMAIN}" "/etc/nginx/sites-enabled/${DOMAIN}"
 nginx -t && systemctl reload nginx
 
 echo

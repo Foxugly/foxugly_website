@@ -27,9 +27,19 @@ INNER
 # est valide. Pattern sites-available + symlink sites-enabled (cohérent avec les
 # autres sites de la box). Nettoie au passage les anciens emplacements (conf.d et
 # le 444-trap zombie www) pour qu'un déploiement converge toujours vers cet état.
-cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly.com
-ln -sf /etc/nginx/sites-available/foxugly.com /etc/nginx/sites-enabled/foxugly.com
+#
+# Le nom du vhost = hostname de SITE_URL, déjà chargé depuis SSM par
+# foxugly-env.service dans /run/foxugly/.env (on ne relit PAS SSM ici). Fallback
+# foxugly.com si la variable est absente.
+SITE_URL=$(grep -m1 '^SITE_URL=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
+DOMAIN="${SITE_URL#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
+[ -n "$DOMAIN" ] || DOMAIN=foxugly.com
+
+# Nettoyage AVANT la pose du symlink : si DOMAIN vaut www.foxugly.com, le rm du
+# zombie ne doit pas effacer le symlink qu'on va créer juste après.
 rm -f /etc/nginx/conf.d/foxugly.conf /etc/nginx/sites-enabled/www.foxugly.com
+cp /opt/foxugly/deploy/nginx.conf "/etc/nginx/sites-available/${DOMAIN}"
+ln -sf "/etc/nginx/sites-available/${DOMAIN}" "/etc/nginx/sites-enabled/${DOMAIN}"
 if nginx -t; then
     systemctl reload nginx
 else
