@@ -46,6 +46,16 @@ class PublicReadTests(BaseAPITestCase):
             self.assertEqual(self.client.get(path).status_code, 200, path)
 
 
+class HealthTests(APITestCase):
+    def test_health_ok(self):
+        r = self.client.get("/health")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["status"], "ok")
+
+    def test_health_trailing_slash(self):
+        self.assertEqual(self.client.get("/health/").status_code, 200)
+
+
 class WritePermissionTests(BaseAPITestCase):
     """Écriture réservée au staff (IsAdminOrReadOnly)."""
 

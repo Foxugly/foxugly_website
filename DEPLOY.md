@@ -65,15 +65,15 @@ sudo -u django bash
 
 sudo systemctl enable --now foxugly              # Gunicorn :8004
 
-# nginx (vhost foxugly, coexiste avec quizonline ; cert wildcard *.foxugly.com déjà émis)
-sudo cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly
-sudo ln -s /etc/nginx/sites-available/foxugly /etc/nginx/sites-enabled/
+# nginx (vhost foxugly via conf.d, coexiste avec quizonline ; cert wildcard déjà émis)
+sudo cp /opt/foxugly/deploy/nginx.conf /etc/nginx/conf.d/foxugly.conf
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
 > Ensuite, **chaque push sur `main` déploie tout seul** (build CI → S3 → SSM →
-> `deploy.sh` : pip install → migrate → collectstatic → restart). `seed_content`
-> n'est **jamais** rejoué.
+> `deploy.sh` : pip install → migrate → collectstatic → **sync nginx.conf + reload**
+> → restart). Les évolutions de `deploy/nginx.conf` se déploient donc seules.
+> `seed_content` n'est **jamais** rejoué.
 
 ---
 
@@ -145,6 +145,25 @@ sudo systemctl status foxugly        # Gunicorn foxugly (:8004)
 sudo journalctl -u foxugly -f        # logs applicatifs
 sudo systemctl restart foxugly
 ```
+
+---
+
+## 6. Monitoring / santé
+
+Sonde dédiée : **`GET https://www.foxugly.com/health`** → `200 {"status":"ok"}`.
+Elle traverse toute la chaîne (nginx → Gunicorn → Django → DB : un `SELECT 1`) et
+renvoie **503** si la base est injoignable. `access_log` coupé côté nginx (pings
+fréquents). Accepte `/health` et `/health/`.
+
+- **UptimeRobot** (ou autre) : surveiller l'URL `/health`, type *keyword* `ok` ou
+  simplement *HTTP 200*. La CI fait déjà ce check après chaque déploiement.
+- Vérif manuelle : `curl -fsS https://www.foxugly.com/health`.
+- Sonde plus stricte possible (vérifier `status==ok` dans le JSON) côté monitoring.
+
+L'endpoint nginx (`location ~ ^/health/?$`) est livré dans `deploy/nginx.conf` et
+appliqué automatiquement par `deploy.sh` (sync + `nginx -t` + reload).
+
+---
 
 ## Notes
 - **Base SQLite** dans `/opt/foxugly/backend/db.sqlite3` (hors bundle, persistée

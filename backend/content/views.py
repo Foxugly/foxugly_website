@@ -4,7 +4,7 @@ import os
 
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.core import signing
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Prefetch
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -290,6 +290,27 @@ class MagicLinkLoginView(APIView):
 
         login(request, user)
         return Response(_user_payload(user))
+
+
+class HealthView(APIView):
+    """Sonde de santé pour le monitoring (UptimeRobot, etc.) : /health.
+
+    Vérifie que l'app répond ET que la base est joignable (toute la chaîne
+    nginx → gunicorn → Django → DB). 200 si OK, 503 sinon.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+        except Exception:  # noqa: BLE001 — toute panne DB = service indisponible
+            logger.exception("Healthcheck : base de données injoignable")
+            return Response({"status": "error", "database": "down"},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({"status": "ok"})
 
 
 class ContactView(APIView):

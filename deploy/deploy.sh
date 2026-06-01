@@ -23,5 +23,16 @@ INNER
 # Le frontend est déjà buildé dans le bundle (frontend/dist/frontend/browser),
 # servi directement par nginx — rien à compiler ici.
 
+# Synchronise la conf nginx depuis le bundle (idempotent) puis recharge si elle
+# est valide. Permet aux évolutions de nginx.conf (ex : /health) de se déployer
+# automatiquement, sans repasser par le bootstrap manuel.
+cp /opt/foxugly/deploy/nginx.conf /etc/nginx/conf.d/foxugly.conf
+if nginx -t; then
+    systemctl reload nginx
+else
+    echo "✗ nginx -t a échoué : conf non rechargée." >&2
+    exit 1
+fi
+
 systemctl restart foxugly
 echo "✓ Déploiement foxugly terminé."

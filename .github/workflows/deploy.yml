@@ -199,7 +199,7 @@ jobs:
       - name: Healthcheck du site
         run: |
           set -uo pipefail
-          URL="https://www.foxugly.com/api/pages/"
+          URL="https://www.foxugly.com/health"
           for i in $(seq 1 10); do
             CODE=$(curl -fsS -o /dev/null -w "%{http_code}" "$URL" || echo 000)
             echo "Tentative $i/10 → HTTP $CODE"
