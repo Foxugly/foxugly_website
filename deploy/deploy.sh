@@ -24,9 +24,12 @@ INNER
 # servi directement par nginx — rien à compiler ici.
 
 # Synchronise la conf nginx depuis le bundle (idempotent) puis recharge si elle
-# est valide. Permet aux évolutions de nginx.conf (ex : /health) de se déployer
-# automatiquement, sans repasser par le bootstrap manuel.
-cp /opt/foxugly/deploy/nginx.conf /etc/nginx/conf.d/foxugly.conf
+# est valide. Pattern sites-available + symlink sites-enabled (cohérent avec les
+# autres sites de la box). Nettoie au passage les anciens emplacements (conf.d et
+# le 444-trap zombie www) pour qu'un déploiement converge toujours vers cet état.
+cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly.com
+ln -sf /etc/nginx/sites-available/foxugly.com /etc/nginx/sites-enabled/foxugly.com
+rm -f /etc/nginx/conf.d/foxugly.conf /etc/nginx/sites-enabled/www.foxugly.com
 if nginx -t; then
     systemctl reload nginx
 else

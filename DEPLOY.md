@@ -65,15 +65,16 @@ sudo -u django bash
 
 sudo systemctl enable --now foxugly              # Gunicorn :8004
 
-# nginx (vhost foxugly via conf.d, coexiste avec quizonline ; cert wildcard déjà émis)
-sudo cp /opt/foxugly/deploy/nginx.conf /etc/nginx/conf.d/foxugly.conf
+# nginx (pattern sites-available + symlink, comme les autres sites ; cert wildcard déjà émis)
+sudo cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly.com
+sudo ln -sf /etc/nginx/sites-available/foxugly.com /etc/nginx/sites-enabled/foxugly.com
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
 > Ensuite, **chaque push sur `main` déploie tout seul** (build CI → S3 → SSM →
-> `deploy.sh` : pip install → migrate → collectstatic → **sync nginx.conf + reload**
-> → restart). Les évolutions de `deploy/nginx.conf` se déploient donc seules.
-> `seed_content` n'est **jamais** rejoué.
+> `deploy.sh` : pip install → migrate → collectstatic → **sync nginx (sites-available
+> + symlink) + reload** → restart). Les évolutions de `deploy/nginx.conf` se déploient
+> donc seules. `seed_content` n'est **jamais** rejoué.
 
 ---
 
