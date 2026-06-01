@@ -16,6 +16,11 @@ cd /opt/foxugly/backend
 . .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+# Charge la vraie clé secrète (lecture LITTÉRALE via grep/cut, sans sourcer le
+# .env → pas d'eval shell sur des valeurs à caractères spéciaux) pour que migrate
+# /collectstatic n'utilisent pas une clé aléatoire (warning + clé non stable).
+DJANGO_SECRET_KEY=$(grep -m1 '^DJANGO_SECRET_KEY=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
+export DJANGO_SECRET_KEY
 python manage.py migrate --noinput          # jamais seed_content (préserve le contenu)
 python manage.py collectstatic --noinput
 INNER
@@ -35,9 +40,15 @@ SITE_URL=$(grep -m1 '^SITE_URL=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- ||
 DOMAIN="${SITE_URL#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
 [ -n "$DOMAIN" ] || DOMAIN=foxugly.com
 
-# Nettoyage AVANT la pose du symlink : si DOMAIN vaut www.foxugly.com, le rm du
-# zombie ne doit pas effacer le symlink qu'on va créer juste après.
-rm -f /etc/nginx/conf.d/foxugly.conf /etc/nginx/sites-enabled/www.foxugly.com
+# Nettoyage EXHAUSTIF avant la pose : on retire TOUTES les variantes gérées
+# (apex + www, available + enabled), le legacy "foxugly" et l'ancien conf.d. Sinon
+# un changement de nom entre deux déploiements (foxugly.com → www.foxugly.com)
+# laisse un second fichier définissant `upstream foxugly_app` → nginx -t en emerg.
+# (rm AVANT cp/ln → pas d'auto-suppression même si DOMAIN == un nom listé ici.)
+rm -f /etc/nginx/conf.d/foxugly.conf \
+      /etc/nginx/sites-enabled/foxugly.com     /etc/nginx/sites-available/foxugly.com \
+      /etc/nginx/sites-enabled/www.foxugly.com /etc/nginx/sites-available/www.foxugly.com \
+      /etc/nginx/sites-enabled/foxugly         /etc/nginx/sites-available/foxugly
 cp /opt/foxugly/deploy/nginx.conf "/etc/nginx/sites-available/${DOMAIN}"
 ln -sf "/etc/nginx/sites-available/${DOMAIN}" "/etc/nginx/sites-enabled/${DOMAIN}"
 if nginx -t; then
