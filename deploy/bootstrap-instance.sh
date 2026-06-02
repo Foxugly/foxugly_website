@@ -46,13 +46,10 @@ echo "== nginx =="
 SITE_URL=$(grep -m1 '^SITE_URL=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
 DOMAIN="${SITE_URL#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
 [ -n "$DOMAIN" ] || DOMAIN=foxugly.com
-# Nettoyage EXHAUSTIF avant la pose (apex + www, available + enabled, legacy
-# "foxugly", ancien conf.d) → jamais deux fichiers définissant `upstream
-# foxugly_app`. rm AVANT cp/ln → pas d'auto-suppression.
-rm -f /etc/nginx/conf.d/foxugly.conf \
-      /etc/nginx/sites-enabled/foxugly.com     /etc/nginx/sites-available/foxugly.com \
-      /etc/nginx/sites-enabled/www.foxugly.com /etc/nginx/sites-available/www.foxugly.com \
-      /etc/nginx/sites-enabled/foxugly         /etc/nginx/sites-available/foxugly
+# Nettoyage avant la pose (apex + www, available + enabled) → jamais deux fichiers
+# définissant `upstream foxugly_app`. rm AVANT cp/ln → pas d'auto-suppression.
+rm -f /etc/nginx/sites-enabled/foxugly.com     /etc/nginx/sites-available/foxugly.com \
+      /etc/nginx/sites-enabled/www.foxugly.com /etc/nginx/sites-available/www.foxugly.com
 cp /var/www/django_websites/foxugly/deploy/nginx.conf "/etc/nginx/sites-available/${DOMAIN}"
 ln -sf "/etc/nginx/sites-available/${DOMAIN}" "/etc/nginx/sites-enabled/${DOMAIN}"
 nginx -t && systemctl reload nginx

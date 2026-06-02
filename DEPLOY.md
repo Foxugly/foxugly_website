@@ -166,9 +166,72 @@ appliqué automatiquement par `deploy.sh` (sync + `nginx -t` + reload).
 
 ---
 
+## 7. Migration SQLite → PostgreSQL
+
+foxugly réutilise le **PostgreSQL local déjà présent** sur l'EC2 (celui de quizonline) :
+on y crée une base + un user `foxugly` dédiés. **Aucun changement de code** (`settings.py`
+est piloté par env, `psycopg` est dans `requirements.txt`). Données transférées via
+`dumpdata`/`loaddata` (agnostique du moteur).
+
+> ⚠️ Fenêtre de bascule : entre le dump (2) et le `loaddata` (4), toute écriture
+> (formulaire de contact, édition admin) irait dans SQLite et serait perdue. Stopper
+> Gunicorn le temps de la bascule (~1 min de 502) garantit l'absence de perte.
+
+```bash
+# 0. (recommandé) geler les écritures
+sudo systemctl stop foxugly-gunicorn
+
+# 1. base + user dans le postgres existant (PWD fort)
+PWD_FOX='...'
+sudo -u postgres psql -v ON_ERROR_STOP=1 <<SQL
+CREATE USER foxugly WITH PASSWORD '${PWD_FOX}';
+CREATE DATABASE foxugly OWNER foxugly ENCODING 'UTF8' TEMPLATE template0;
+SQL
+
+# 2. dump des données SQLite (AVANT toute bascule d'env)
+sudo -u django bash -c '
+  set -a; . /run/foxugly/.env; set +a
+  cd /var/www/django_websites/foxugly/backend && . .venv/bin/activate
+  python manage.py dumpdata --natural-foreign --natural-primary \
+    -e contenttypes -e auth.permission -e admin.logentry -e sessions.session \
+    --indent 2 -o /tmp/foxugly_data.json'
+
+# 3. params SSM (depuis CloudShell/poste admin — l'instance n'a pas ssm:PutParameter)
+R="--region eu-west-1"
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_ENGINE   --value postgresql
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_NAME     --value foxugly
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_USER     --value foxugly
+aws ssm put-parameter $R --type SecureString --name /foxugly/prod/DJANGO_DB_PASSWORD --value "$PWD_FOX"
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_HOST     --value 127.0.0.1
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_PORT     --value 5432
+
+# 4. régénérer l'env + créer le schéma + charger les données dans postgres
+sudo systemctl restart foxugly-env
+grep '^DJANGO_DB' /run/foxugly/.env            # vérifier les 6 vars
+sudo -u django bash -c '
+  set -a; . /run/foxugly/.env; set +a
+  cd /var/www/django_websites/foxugly/backend && . .venv/bin/activate
+  python manage.py migrate --noinput
+  python manage.py loaddata /tmp/foxugly_data.json'
+
+# 5. redémarrer + vérifier
+sudo systemctl start foxugly-gunicorn
+curl -fsS https://www.foxugly.com/health
+sudo -u postgres psql -d foxugly -c "SELECT count(*) FROM content_page;"
+rm -f /tmp/foxugly_data.json                   # contient des données → ne pas laisser traîner
+```
+
+`db.sqlite3` est conservé comme **backup** (à supprimer seulement après quelques jours
+de prod Postgres sereins). Backups Postgres : prévoir un `pg_dump` régulier de la base
+`foxugly` (cron + bucket S3), l'instance pouvant être éphémère.
+
+---
+
 ## Notes
 - **Base SQLite** dans `/var/www/django_websites/foxugly/backend/db.sqlite3` (hors bundle, persistée
   entre déploiements). **Médias** dans `/var/www/django_websites/foxugly/backend/media/` (idem). Prévoir
   une sauvegarde si l'instance est éphémère (ou bucket S3).
 - **Frontend** : buildé en CI et livré dans le bundle ; nginx le sert directement.
-- Passage à **PostgreSQL** possible : adapter `DATABASES` (var d'env) + `psycopg`.
+- Passage à **PostgreSQL** : aucun changement de code (`settings.py` est déjà piloté
+  par env). Définir `DJANGO_DB_ENGINE=postgresql` + `DJANGO_DB_*` dans SSM `/foxugly/prod/`
+  (`psycopg` est déjà dans `requirements.txt`).

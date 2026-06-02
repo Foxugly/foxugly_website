@@ -30,8 +30,7 @@ INNER
 
 # Synchronise la conf nginx depuis le bundle (idempotent) puis recharge si elle
 # est valide. Pattern sites-available + symlink sites-enabled (cohérent avec les
-# autres sites de la box). Nettoie au passage les anciens emplacements (conf.d et
-# le 444-trap zombie www) pour qu'un déploiement converge toujours vers cet état.
+# autres sites de la box).
 #
 # Le nom du vhost = hostname de SITE_URL, déjà chargé depuis SSM par
 # foxugly-env.service dans /run/foxugly/.env (on ne relit PAS SSM ici). Fallback
@@ -40,15 +39,14 @@ SITE_URL=$(grep -m1 '^SITE_URL=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- ||
 DOMAIN="${SITE_URL#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
 [ -n "$DOMAIN" ] || DOMAIN=foxugly.com
 
-# Nettoyage EXHAUSTIF avant la pose : on retire TOUTES les variantes gérées
-# (apex + www, available + enabled), le legacy "foxugly" et l'ancien conf.d. Sinon
-# un changement de nom entre deux déploiements (foxugly.com → www.foxugly.com)
-# laisse un second fichier définissant `upstream foxugly_app` → nginx -t en emerg.
-# (rm AVANT cp/ln → pas d'auto-suppression même si DOMAIN == un nom listé ici.)
-rm -f /etc/nginx/conf.d/foxugly.conf \
-      /etc/nginx/sites-enabled/foxugly.com     /etc/nginx/sites-available/foxugly.com \
-      /etc/nginx/sites-enabled/www.foxugly.com /etc/nginx/sites-available/www.foxugly.com \
-      /etc/nginx/sites-enabled/foxugly         /etc/nginx/sites-available/foxugly
+# Nettoyage avant la pose : retire les variantes apex/www (available + enabled).
+# Une seule doit subsister, sinon deux fichiers redéfinissent `upstream foxugly_app`
+# → nginx -t en emerg lors d'un renommage de SITE_URL (foxugly.com ↔ www.foxugly.com).
+# (rm AVANT cp/ln → pas d'auto-suppression même si DOMAIN figure dans la liste.)
+# Legacy retiré : ancien conf.d/foxugly.conf et nom court "foxugly" (transition faite,
+# plus jamais recréés) → voir purge ponctuelle des .disabled/.bak hors script.
+rm -f /etc/nginx/sites-enabled/foxugly.com     /etc/nginx/sites-available/foxugly.com \
+      /etc/nginx/sites-enabled/www.foxugly.com /etc/nginx/sites-available/www.foxugly.com
 cp /var/www/django_websites/foxugly/deploy/nginx.conf "/etc/nginx/sites-available/${DOMAIN}"
 ln -sf "/etc/nginx/sites-available/${DOMAIN}" "/etc/nginx/sites-enabled/${DOMAIN}"
 if nginx -t; then
@@ -68,12 +66,6 @@ for unit in foxugly-env.service foxugly-gunicorn.service; do
         units_changed=1
     fi
 done
-# Nettoyage de l'ancien unit mono-nom (avant le renommage en foxugly-gunicorn).
-if [ -e /etc/systemd/system/foxugly.service ]; then
-    systemctl disable --now foxugly.service 2>/dev/null || true
-    rm -f /etc/systemd/system/foxugly.service
-    units_changed=1
-fi
 [ "$units_changed" = 1 ] && systemctl daemon-reload
 
 systemctl enable foxugly-gunicorn        # persistance au boot (idempotent)

@@ -15,17 +15,7 @@ import { ContentService } from '../../core/content.service';
             <img src="assets/logo-white.svg" alt="foxugly" />
             <span><span class="fox" style="color:#fff;">fox</span><span class="ugly">ugly</span></span>
           </a>
-          <nav class="footer-links">
-            @for (p of (pages$ | async); track p.slug) {
-              <a [routerLink]="['/', p.slug]">{{ p.nav_label || p.title }}</a>
-            }
-            <a routerLink="/contact">Me contacter</a>
-            <a routerLink="/admin">Admin</a>
-          </nav>
-        </div>
-        <div class="wrap footer-bottom">
-          <span>© {{ year }} {{ s.brand_name }}. Tous droits réservés.</span>
-          <span>{{ s.tagline }}</span>
+          <span class="footer-copy">© {{ year }} {{ s.brand_name }}. Tous droits réservés.</span>
         </div>
       </footer>
     }
@@ -34,6 +24,5 @@ import { ContentService } from '../../core/content.service';
 export class Footer {
   private content = inject(ContentService);
   protected settings$ = this.content.settings();
-  protected pages$ = this.content.navPages();
   protected year = 2026;
 }
