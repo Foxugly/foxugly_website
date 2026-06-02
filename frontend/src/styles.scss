@@ -62,6 +62,7 @@ h1, h2, h3 { line-height: 1.18; letter-spacing: -.02em; font-weight: 800; }
 .nav-links a:hover { background: var(--bg-soft); color: var(--ink); }
 .nav-links a.active { color: var(--ink); font-weight: 600; }
 .nav-cta { margin-left: .5rem; }
+.nav-admin { font-size: .85rem; color: var(--muted); }
 .nav-burger { display: none; background: none; border: 0; font-size: 1.5rem; cursor: pointer; color: var(--ink); }
 
 /* ---------- Hero ---------- */
