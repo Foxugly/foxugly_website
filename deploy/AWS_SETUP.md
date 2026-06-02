@@ -70,13 +70,13 @@ Repo `Foxugly/foxugly_website` → **Settings → Secrets and variables → Acti
 On réutilise l'utilisateur existant **`django`** (groupe `www-data`) — pas de
 nouvel utilisateur à créer.
 ```bash
-sudo mkdir -p /opt/foxugly/backend/media && sudo chown -R django:www-data /opt/foxugly
+sudo mkdir -p /var/www/django_websites/foxugly/backend/media && sudo chown -R django:www-data /var/www/django_websites/foxugly
 sudo apt-get install -y python3-venv
 ```
 
 ## 7. Premier déploiement (bootstrap)
 Voir **`DEPLOY.md §1`** (récupérer le dernier bundle S3, l'extraire, installer
-`foxugly-env.service` + `foxugly.service` + le vhost nginx, puis `migrate` +
+`foxugly-env.service` + `foxugly-gunicorn.service` + le vhost nginx, puis `migrate` +
 `seed_content` + `createsuperuser`). Les push suivants se déploient seuls.
 
 > ⚠ Sur l'instance, l'`aws s3 cp` du déploiement doit passer par le **rôle d'instance**,
