@@ -20,6 +20,7 @@ import { ContentService } from '../../core/content.service';
             <a [routerLink]="['/', p.slug]" routerLinkActive="active" (click)="close()">{{ p.nav_label || p.title }}</a>
           }
           <a routerLink="/contact" class="btn btn-primary nav-cta" (click)="close()">Me contacter</a>
+          <a routerLink="/admin" routerLinkActive="active" class="nav-admin" (click)="close()">Admin</a>
         </div>
 
         <button class="nav-burger" type="button" aria-label="Menu" (click)="toggle()">☰</button>
