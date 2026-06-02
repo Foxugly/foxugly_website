@@ -24,6 +24,10 @@ concurrency:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION || 'eu-west-1' }}
   BUCKET: foxugly-deploy
+  # Opt-in Node 24 pour les actions JS encore déclarées en node20
+  # (aws-actions/configure-aws-credentials@v5 n'a pas encore de release node24).
+  # Évite le warning de dépréciation ; GitHub forcera ce comportement le 16/06/2026.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   # ---------------------------------------------------------------------------
