@@ -170,10 +170,10 @@ jobs:
             "set -eu",
             "export AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_CONFIG_FILE=/dev/null",
             "aws s3 cp s3://$BUCKET/builds/$BUNDLE /tmp/$BUNDLE --region $AWS_REGION",
-            "mkdir -p /opt/foxugly",
-            "tar xzf /tmp/$BUNDLE -C /opt/foxugly",
-            "chown -R django:www-data /opt/foxugly",
-            "bash /opt/foxugly/deploy/deploy.sh",
+            "mkdir -p /var/www/django_websites/foxugly",
+            "tar xzf /tmp/$BUNDLE -C /var/www/django_websites/foxugly",
+            "chown -R django:www-data /var/www/django_websites/foxugly",
+            "bash /var/www/django_websites/foxugly/deploy/deploy.sh",
             "rm -f /tmp/$BUNDLE"
           ]}
           JSON

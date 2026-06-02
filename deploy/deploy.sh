@@ -3,7 +3,7 @@
 # Déploiement foxugly côté serveur — pattern S3-bundle.
 # Exécuté EN ROOT par la commande SSM, APRÈS que le bundle (backend source +
 # frontend déjà buildé + deploy/) a été téléchargé depuis S3, extrait dans
-# /opt/foxugly et chown foxugly (voir .github/workflows/deploy.yml).
+# /var/www/django_websites/foxugly et chown foxugly (voir .github/workflows/deploy.yml).
 # Aucune compilation ici (pas de git, pas de npm) → léger pour la t3.small.
 #
 set -euo pipefail
@@ -11,7 +11,7 @@ set -euo pipefail
 # Backend lancé en tant que django → ownership cohérent (db SQLite, venv, statics).
 sudo -u django bash <<'INNER'
 set -euo pipefail
-cd /opt/foxugly/backend
+cd /var/www/django_websites/foxugly/backend
 [ -d .venv ] || python3 -m venv .venv
 . .venv/bin/activate
 pip install --upgrade pip
@@ -49,7 +49,7 @@ rm -f /etc/nginx/conf.d/foxugly.conf \
       /etc/nginx/sites-enabled/foxugly.com     /etc/nginx/sites-available/foxugly.com \
       /etc/nginx/sites-enabled/www.foxugly.com /etc/nginx/sites-available/www.foxugly.com \
       /etc/nginx/sites-enabled/foxugly         /etc/nginx/sites-available/foxugly
-cp /opt/foxugly/deploy/nginx.conf "/etc/nginx/sites-available/${DOMAIN}"
+cp /var/www/django_websites/foxugly/deploy/nginx.conf "/etc/nginx/sites-available/${DOMAIN}"
 ln -sf "/etc/nginx/sites-available/${DOMAIN}" "/etc/nginx/sites-enabled/${DOMAIN}"
 if nginx -t; then
     systemctl reload nginx
@@ -58,5 +58,24 @@ else
     exit 1
 fi
 
-systemctl restart foxugly
+# Sync des units systemd depuis le bundle (idempotent) : permet de faire évoluer
+# le service (chemin, options, bind…) sans repasser par bootstrap-instance.sh.
+# daemon-reload uniquement si un fichier a réellement changé.
+units_changed=0
+for unit in foxugly-env.service foxugly-gunicorn.service; do
+    if ! cmp -s "/var/www/django_websites/foxugly/deploy/$unit" "/etc/systemd/system/$unit"; then
+        cp "/var/www/django_websites/foxugly/deploy/$unit" "/etc/systemd/system/$unit"
+        units_changed=1
+    fi
+done
+# Nettoyage de l'ancien unit mono-nom (avant le renommage en foxugly-gunicorn).
+if [ -e /etc/systemd/system/foxugly.service ]; then
+    systemctl disable --now foxugly.service 2>/dev/null || true
+    rm -f /etc/systemd/system/foxugly.service
+    units_changed=1
+fi
+[ "$units_changed" = 1 ] && systemctl daemon-reload
+
+systemctl enable foxugly-gunicorn        # persistance au boot (idempotent)
+systemctl restart foxugly-gunicorn
 echo "✓ Déploiement foxugly terminé."

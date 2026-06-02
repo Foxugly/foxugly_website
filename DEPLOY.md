@@ -6,11 +6,11 @@ télécharger et déployer. **Aucune compilation sur le serveur.**
 
 ```
 Internet ─► nginx (443/80, partagé)
-              ├─ foxugly.com → frontend Angular (/opt/foxugly/frontend/dist/frontend/browser)
+              ├─ foxugly.com → frontend Angular (/var/www/django_websites/foxugly/frontend/dist/frontend/browser)
               │                + /api /api-auth /admin /static → Gunicorn 127.0.0.1:8004
-              │                + /media → /opt/foxugly/backend/media
+              │                + /media → /var/www/django_websites/foxugly/backend/media
               └─ quizonline.…  (Gunicorn :8000)
-            Gunicorn foxugly  [systemd: foxugly.service, :8004]
+            Gunicorn foxugly  [systemd: foxugly-gunicorn.service, :8004]
             secrets : /run/foxugly/.env  [systemd: foxugly-env.service ← SSM Parameter Store]
 
 CI (push main) → build front+back → s3://foxugly-deploy/builds/ → SSM → deploy/deploy.sh
@@ -26,8 +26,8 @@ Sur l'instance (déjà gérée par SSM via le rôle `quizonline-ec2`). Pré-requ
 ```bash
 # Répertoires (le code arrivera par le bundle). On réutilise l'utilisateur
 # existant django (groupe www-data) — pas de useradd.
-sudo mkdir -p /opt/foxugly/backend/media
-sudo chown -R django:www-data /opt/foxugly
+sudo mkdir -p /var/www/django_websites/foxugly/backend/media
+sudo chown -R django:www-data /var/www/django_websites/foxugly
 ```
 
 Comme tout le code arrive **par le bundle**, l'ordre de bootstrap est :
@@ -35,26 +35,26 @@ Comme tout le code arrive **par le bundle**, l'ordre de bootstrap est :
 1. Créer les **paramètres SSM** `/foxugly/prod/*` (§2) et le **bucket + rôles IAM**
    (`deploy/iam/README.md`), renseigner les **secrets GitHub**.
 2. **Pousser sur `main`** : la CI build et **dépose le bundle** dans S3. (Son étape
-   SSM échouera tant que `foxugly.service` n'est pas installé — normal au 1er coup.)
+   SSM échouera tant que `foxugly-gunicorn.service` n'est pas installé — normal au 1er coup.)
 3. **Premier déploiement manuel** sur l'instance (récupère le bundle + installe tout) :
 
 ```bash
 # Récupère et extrait le dernier bundle
 LATEST=$(aws s3 ls s3://foxugly-deploy/builds/ --region eu-west-1 | sort | tail -1 | awk '{print $4}')
 aws s3 cp "s3://foxugly-deploy/builds/$LATEST" /tmp/b.tgz --region eu-west-1
-sudo tar xzf /tmp/b.tgz -C /opt/foxugly
-sudo chown -R django:www-data /opt/foxugly
+sudo tar xzf /tmp/b.tgz -C /var/www/django_websites/foxugly
+sudo chown -R django:www-data /var/www/django_websites/foxugly
 
 # Services (depuis le bundle) + génération de l'env
-sudo cp /opt/foxugly/deploy/foxugly-env.service /etc/systemd/system/
-sudo cp /opt/foxugly/deploy/foxugly.service     /etc/systemd/system/
+sudo cp /var/www/django_websites/foxugly/deploy/foxugly-env.service /etc/systemd/system/
+sudo cp /var/www/django_websites/foxugly/deploy/foxugly-gunicorn.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now foxugly-env          # écrit /run/foxugly/.env depuis SSM
 
 # Init base + contenu + admin (une seule fois), env chargé depuis /run
 sudo -u django bash
   set -a; . /run/foxugly/.env; set +a
-  cd /opt/foxugly/backend
+  cd /var/www/django_websites/foxugly/backend
   python3 -m venv .venv && . .venv/bin/activate
   pip install -r requirements.txt
   python manage.py migrate
@@ -63,10 +63,10 @@ sudo -u django bash
   python manage.py collectstatic --noinput
   exit
 
-sudo systemctl enable --now foxugly              # Gunicorn :8004
+sudo systemctl enable --now foxugly-gunicorn     # Gunicorn :8004
 
 # nginx (pattern sites-available + symlink, comme les autres sites ; cert wildcard déjà émis)
-sudo cp /opt/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly.com
+sudo cp /var/www/django_websites/foxugly/deploy/nginx.conf /etc/nginx/sites-available/foxugly.com
 sudo ln -sf /etc/nginx/sites-available/foxugly.com /etc/nginx/sites-enabled/foxugly.com
 sudo nginx -t && sudo systemctl reload nginx
 ```
@@ -108,7 +108,7 @@ aws ssm put-parameter $R --type String       --name /foxugly/prod/SITE_URL      
 # PostgreSQL (optionnel) : /foxugly/prod/DJANGO_DB_ENGINE=postgresql + DJANGO_DB_*  (voir .env.example)
 ```
 
-Voir `backend/.env.example` pour la liste. Après modif : `sudo systemctl restart foxugly-env foxugly`.
+Voir `backend/.env.example` pour la liste. Après modif : `sudo systemctl restart foxugly-env foxugly-gunicorn`.
 
 ---
 
@@ -133,8 +133,8 @@ aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
   --document-name AWS-RunShellScript --parameters '{"commands":[
     "B=$(aws s3 ls s3://foxugly-deploy/builds/ --region eu-west-1 | sort | tail -1 | awk \"{print \\$4}\")",
     "aws s3 cp s3://foxugly-deploy/builds/$B /tmp/$B --region eu-west-1",
-    "tar xzf /tmp/$B -C /opt/foxugly && chown -R django:www-data /opt/foxugly",
-    "bash /opt/foxugly/deploy/deploy.sh"]}'
+    "tar xzf /tmp/$B -C /var/www/django_websites/foxugly && chown -R django:www-data /var/www/django_websites/foxugly",
+    "bash /var/www/django_websites/foxugly/deploy/deploy.sh"]}'
 ```
 
 ---
@@ -142,9 +142,9 @@ aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
 ## 5. Exploitation
 
 ```bash
-sudo systemctl status foxugly        # Gunicorn foxugly (:8004)
-sudo journalctl -u foxugly -f        # logs applicatifs
-sudo systemctl restart foxugly
+sudo systemctl status foxugly-gunicorn    # Gunicorn foxugly (:8004)
+sudo journalctl -u foxugly-gunicorn -f    # logs applicatifs
+sudo systemctl restart foxugly-gunicorn
 ```
 
 ---
@@ -167,8 +167,8 @@ appliqué automatiquement par `deploy.sh` (sync + `nginx -t` + reload).
 ---
 
 ## Notes
-- **Base SQLite** dans `/opt/foxugly/backend/db.sqlite3` (hors bundle, persistée
-  entre déploiements). **Médias** dans `/opt/foxugly/backend/media/` (idem). Prévoir
+- **Base SQLite** dans `/var/www/django_websites/foxugly/backend/db.sqlite3` (hors bundle, persistée
+  entre déploiements). **Médias** dans `/var/www/django_websites/foxugly/backend/media/` (idem). Prévoir
   une sauvegarde si l'instance est éphémère (ou bucket S3).
 - **Frontend** : buildé en CI et livré dans le bundle ; nginx le sert directement.
 - Passage à **PostgreSQL** possible : adapter `DATABASES` (var d'env) + `psycopg`.

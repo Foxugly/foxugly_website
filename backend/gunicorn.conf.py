@@ -1,7 +1,7 @@
 """Configuration Gunicorn pour foxugly (production).
 
 Lancement : gunicorn -c gunicorn.conf.py foxugly.wsgi:application
-(géré par systemd, voir deploy/foxugly.service).
+(géré par systemd, voir deploy/foxugly-gunicorn.service).
 """
 import multiprocessing
 import os
