@@ -152,7 +152,7 @@ jobs:
           tar czf "$BUNDLE" backend frontend/dist deploy
 
       - name: Configurer les identifiants AWS (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
