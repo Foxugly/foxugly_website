@@ -1,12 +1,16 @@
 import { ErrorHandler, Injectable } from '@angular/core';
 import * as Sentry from '@sentry/browser';
 
-import { SENTRY_DSN, SENTRY_ENV } from './sentry.config';
+import { SENTRY_DSN, SENTRY_ENV, SENTRY_RELEASE } from './sentry.config';
 
 /** Initialise Sentry si un DSN est configuré (no-op sinon). Appelé dans main.ts. */
 export function initSentry(): void {
   if (SENTRY_DSN) {
-    Sentry.init({ dsn: SENTRY_DSN, environment: SENTRY_ENV });
+    Sentry.init({
+      dsn: SENTRY_DSN,
+      environment: SENTRY_ENV,
+      release: SENTRY_RELEASE || undefined,
+    });
   }
 }
 

@@ -2,9 +2,9 @@
 Configuration Django pour le site foxugly.
 Backend headless : sert une API REST consommée par le frontend Angular.
 """
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -31,6 +31,7 @@ if not SECRET_KEY:
             "DJANGO_SECRET_KEY non défini en production : clé aléatoire générée. "
             "Définissez DJANGO_SECRET_KEY pour des sessions stables.",
             RuntimeWarning,
+            stacklevel=2,
         )
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -121,6 +122,28 @@ TIME_ZONE = "Europe/Paris"
 USE_I18N = True
 USE_TZ = True
 
+# --- Journalisation ---------------------------------------------------------
+# Config explicite : tout part sur la sortie standard (captée par gunicorn →
+# journald/systemd en prod, et visible en console en dev). Les logger.exception()
+# des vues (envoi email, healthcheck DB…) deviennent ainsi réellement traçables.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "standard"},
+    },
+    "root": {"handlers": ["console"], "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO")},
+    "loggers": {
+        # Bruit des requêtes serveur réduit (les erreurs 5xx restent loggées par
+        # django.request) ; notre app et django au niveau configurable.
+        "django": {"level": "INFO", "handlers": ["console"], "propagate": False},
+        "content": {"level": "INFO", "handlers": ["console"], "propagate": False},
+    },
+}
+
 # --- Fichiers statiques & médias -------------------------------------------
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -148,6 +171,16 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+    # Limites de débit appliquées seulement aux vues qui le demandent
+    # (ScopedRateThrottle + throttle_scope) : endpoints publics non authentifiés
+    # qui écrivent en base et/ou envoient un email (contact, magic-link) → anti-spam.
+    # NB : le cache par défaut (LocMemCache) est par-process ; avec plusieurs workers
+    # gunicorn la limite effective est multipliée par le nombre de workers. Pour une
+    # limite stricte et partagée, configurer un cache commun (Redis ou DatabaseCache).
+    "DEFAULT_THROTTLE_RATES": {
+        "contact": os.environ.get("DJANGO_THROTTLE_CONTACT", "5/min"),
+        "magic_link": os.environ.get("DJANGO_THROTTLE_MAGIC_LINK", "5/min"),
+    },
 }
 
 # --- CORS (frontend Angular) ------------------------------------------------
@@ -181,12 +214,30 @@ if os.environ.get("DJANGO_SECURE", "False") == "True":
 # --- Sentry (monitoring d'erreurs) ------------------------------------------
 # Activé uniquement si SENTRY_DSN est défini (no-op en local / sans DSN).
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+
+
+def _sentry_release():
+    """Identifie la version déployée pour corréler une erreur Sentry à un commit.
+
+    Priorité à SENTRY_RELEASE (env), sinon le fichier RELEASE écrit dans le bundle
+    par la CI (contient le SHA du commit). None si rien → Sentry ne tague pas.
+    """
+    env = os.environ.get("SENTRY_RELEASE")
+    if env:
+        return env
+    try:
+        return (BASE_DIR / "RELEASE").read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
 if SENTRY_DSN:
     import sentry_sdk
 
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=os.environ.get("SENTRY_ENV", "production"),
+        release=_sentry_release(),
         # Tracing désactivé par défaut (0.0) ; monter si besoin de perf monitoring.
         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
         send_default_pii=False,

@@ -47,6 +47,14 @@ type FieldErrors = { name?: string; email?: string; message?: string };
               <label for="cf-subject">Sujet (optionnel)</label>
               <input id="cf-subject" name="subject" [(ngModel)]="model.subject" />
             </div>
+
+            <!-- Honeypot anti-spam : masqué et hors tabulation ; un humain ne le
+                 remplit jamais. S'il est rempli, le backend ignore le message. -->
+            <div aria-hidden="true" style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;">
+              <label for="cf-website">Ne pas remplir</label>
+              <input id="cf-website" name="website" type="text" tabindex="-1"
+                     autocomplete="off" [(ngModel)]="model.website" />
+            </div>
             <div class="field">
               <label for="cf-message">Message</label>
               <textarea id="cf-message" name="message" rows="5" [(ngModel)]="model.message" (ngModelChange)="clear('message')"
@@ -73,7 +81,7 @@ export class ContactForm {
   private content = inject(ContentService);
   get c() { return this.block.content ?? {}; }
 
-  protected model = { name: '', email: '', subject: '', message: '' };
+  protected model = { name: '', email: '', subject: '', message: '', website: '' };
   protected loading = signal(false);
   protected sent = signal(false);
   protected error = signal('');

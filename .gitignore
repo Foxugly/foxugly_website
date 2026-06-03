@@ -6,6 +6,9 @@
 .playwright-mcp/
 *.log
 
+# Fichier de release (SHA du commit) généré par la CI au déploiement.
+backend/RELEASE
+
 # --- OS ---
 .DS_Store
 Thumbs.db

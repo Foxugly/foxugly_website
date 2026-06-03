@@ -12,12 +12,12 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .email import graph_configured, send_contact_email, send_login_link
 from .models import (
     Block,
-    ContactMessage,
     News,
     Page,
     Partner,
@@ -38,6 +38,21 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class PublishedQuerysetMixin:
+    """Restreint le queryset aux objets publiés pour le public ; le staff voit tout.
+
+    Mutualise le motif répété sur les collections (`is_published`). Les sous-classes
+    qui ajoutent leurs propres filtres (secteur, type…) appellent `super().get_queryset()`
+    en premier pour hériter de cette restriction.
+    """
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if not self.request.user.is_staff:
+            qs = qs.filter(is_published=True)
+        return qs
 
 
 class PageViewSet(viewsets.ModelViewSet):
@@ -105,42 +120,32 @@ class BlockViewSet(viewsets.ModelViewSet):
         return Response({"status": "ok"})
 
 
-class NewsViewSet(viewsets.ModelViewSet):
+class NewsViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = NewsSerializer
     queryset = News.objects.all()
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if not self.request.user.is_staff:
-            qs = qs.filter(is_published=True)
-        return qs
 
-
-class ProjectViewSet(viewsets.ModelViewSet):
+class ProjectViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     queryset = Project.objects.all()
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset()  # applique le filtre « publié » du mixin
         sector = self.request.query_params.get("sector")
         if sector:
             qs = qs.filter(sector__iexact=sector)
-        if not self.request.user.is_staff:
-            qs = qs.filter(is_published=True)
         return qs
 
 
-class PartnerViewSet(viewsets.ModelViewSet):
+class PartnerViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = PartnerSerializer
     queryset = Partner.objects.all()
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset()  # applique le filtre « publié » du mixin
         kind = self.request.query_params.get("kind")
         if kind:
             qs = qs.filter(kind=kind)
-        if not self.request.user.is_staff:
-            qs = qs.filter(is_published=True)
         return qs
 
     @action(detail=True, methods=["post"])
@@ -155,15 +160,9 @@ class PartnerViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class TestimonialViewSet(viewsets.ModelViewSet):
+class TestimonialViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = TestimonialSerializer
     queryset = Testimonial.objects.all()
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if not self.request.user.is_staff:
-            qs = qs.filter(is_published=True)
-        return qs
 
 
 class SiteSettingsView(APIView):
@@ -242,6 +241,9 @@ class MagicLinkRequestView(APIView):
     """Demande un lien de connexion par email (staff uniquement)."""
 
     permission_classes = [AllowAny]
+    # Anti-abus : limite le nombre de mails de connexion qu'on peut déclencher.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "magic_link"
 
     def post(self, request):
         email = (request.data.get("email") or "").strip()
@@ -317,8 +319,24 @@ class ContactView(APIView):
     """Formulaire de contact public : stocke le message puis l'envoie via Graph."""
 
     permission_classes = [AllowAny]
+    # Anti-spam : limite les soumissions par IP (endpoint public écrivant en base
+    # et envoyant un email). Complété par un honeypot ci-dessous.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "contact"
+
+    # Champ leurre : invisible pour un humain (masqué en CSS côté front), souvent
+    # rempli par les bots. S'il est renseigné → on répond 201 sans rien stocker ni
+    # envoyer (le bot ne sait pas qu'il a été filtré).
+    HONEYPOT_FIELD = "website"
 
     def post(self, request):
+        if (request.data.get(self.HONEYPOT_FIELD) or "").strip():
+            logger.info("Message de contact ignoré (honeypot rempli).")
+            return Response(
+                {"detail": "Merci, votre message a bien été reçu."},
+                status=status.HTTP_201_CREATED,
+            )
+
         serializer = ContactMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         msg = serializer.save()   # message persisté (jamais perdu)
