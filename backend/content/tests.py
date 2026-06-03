@@ -50,6 +50,53 @@ class PublicReadTests(BaseAPITestCase):
             self.assertEqual(self.client.get(path).status_code, 200, path)
 
 
+class PublicCacheHeaderTests(BaseAPITestCase):
+    """Cache HTTP des lectures publiques en lecture seule (PublicReadCacheMixin)."""
+
+    CONTENT_PATHS = (
+        "/api/pages/", "/api/pages/accueil/",
+        "/api/blocks/?page=accueil", "/api/news/",
+        "/api/projects/", "/api/partners/", "/api/testimonials/",
+    )
+
+    def test_anonymous_reads_are_publicly_cacheable(self):
+        for path in self.CONTENT_PATHS:
+            r = self.client.get(path)
+            self.assertEqual(r.status_code, 200, path)
+            cc = r.headers.get("Cache-Control", "")
+            self.assertIn("public", cc, path)
+            self.assertIn("max-age=", cc, path)
+            # Vary: Cookie → un cache partagé ne mélange pas anonyme/staff.
+            self.assertIn("Cookie", r.headers.get("Vary", ""), path)
+
+    def test_staff_reads_are_not_publicly_cached(self):
+        # Le staff voit les brouillons → jamais de cache `public`.
+        self.client.force_authenticate(self.staff)
+        r = self.client.get("/api/pages/")
+        self.assertEqual(r.status_code, 200)
+        cc = r.headers.get("Cache-Control", "")
+        self.assertNotIn("public", cc)
+        self.assertIn("private", cc)
+
+    def test_write_responses_are_not_cached(self):
+        # Les écritures (et endpoints publics non-contenu) ne sont jamais cachées.
+        self.client.force_authenticate(self.staff)
+        r = self.client.post(
+            "/api/blocks/reorder/", [{"id": self.hero.id, "order": 1}], format="json"
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn("public", r.headers.get("Cache-Control", ""))
+
+    def test_contact_post_not_cached(self):
+        r = self.client.post(
+            "/api/contact/",
+            {"name": "Jean", "email": "jean@x.com", "message": "Bonjour"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertNotIn("public", r.headers.get("Cache-Control", ""))
+
+
 class HealthTests(APITestCase):
     def test_health_ok(self):
         r = self.client.get("/health")

@@ -102,6 +102,10 @@ class Block(models.Model):
         verbose_name = "Bloc"
         verbose_name_plural = "Blocs"
         ordering = ["page", "order", "id"]
+        # Index composite pour la récupération ordonnée des blocs d'une page
+        # (PageViewSet.retrieve préchargé `blocks` filtré/ordonné par page+order,
+        # BlockViewSet `?page=<slug>` ordonné par page+order).
+        indexes = [models.Index(fields=["page", "order"])]
 
     def __str__(self):
         return f"{self.page.slug} · {self.get_block_type_display()} (#{self.order})"

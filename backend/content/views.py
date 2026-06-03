@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.core import signing
 from django.db import connection, transaction
 from django.db.models import Prefetch
+from django.utils.cache import patch_cache_control, patch_vary_headers
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status, viewsets
@@ -39,6 +40,47 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
+# Durée de cache HTTP des endpoints de contenu public (lecture seule).
+# 120 s : assez court pour qu'une mise à jour de contenu se propage en ~2 min,
+# assez long pour absorber les rafales de requêtes (un visiteur qui parcourt le
+# site, plusieurs onglets, le prefetch du SPA) côté navigateur et reverse-proxy.
+PUBLIC_CONTENT_MAX_AGE = 120
+
+
+class PublicReadCacheMixin:
+    """Ajoute un `Cache-Control: public` sur les lectures publiques (GET/HEAD).
+
+    But : permettre à nginx et au navigateur de servir les répétitions de la
+    lecture publique en lecture seule sans repasser par gunicorn/DB.
+
+    Garde-fous (conservateur) :
+      * seules les méthodes sûres (GET/HEAD) reçoivent un cache `public` ;
+        toute écriture reste non mise en cache ;
+      * une réponse au staff (qui voit les brouillons / contenus non publiés)
+        n'est JAMAIS marquée `public` — elle reçoit `private, no-cache` pour que
+        l'admin voie toujours du contenu frais et qu'aucun cache partagé ne
+        mémorise une réponse contenant des brouillons ;
+      * `Vary: Cookie` : un cache intermédiaire distingue les réponses selon la
+        session (anonyme vs staff connecté) et ne sert pas l'une pour l'autre ;
+      * uniquement appliqué si la réponse est un succès (2xx) et que l'en-tête
+        n'a pas déjà été posé en amont.
+    """
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        is_safe = request.method in ("GET", "HEAD")
+        is_success = 200 <= response.status_code < 300
+        if is_safe and is_success and "Cache-Control" not in response:
+            patch_vary_headers(response, ("Cookie",))
+            if getattr(request.user, "is_staff", False):
+                # Le staff voit les brouillons → jamais de cache partagé.
+                patch_cache_control(response, private=True, no_cache=True)
+            else:
+                patch_cache_control(
+                    response, public=True, max_age=PUBLIC_CONTENT_MAX_AGE
+                )
+        return response
+
 
 class PublishedQuerysetMixin:
     """Restreint le queryset aux objets publiés pour le public ; le staff voit tout.
@@ -55,7 +97,7 @@ class PublishedQuerysetMixin:
         return qs
 
 
-class PageViewSet(viewsets.ModelViewSet):
+class PageViewSet(PublicReadCacheMixin, viewsets.ModelViewSet):
     """Pages et leurs blocs. Recherche par slug (ex : /api/pages/accueil/)."""
 
     queryset = Page.objects.all().order_by("order", "id")
@@ -84,7 +126,7 @@ class PageViewSet(viewsets.ModelViewSet):
         return qs
 
 
-class BlockViewSet(viewsets.ModelViewSet):
+class BlockViewSet(PublicReadCacheMixin, viewsets.ModelViewSet):
     """CRUD des blocs (utilisé par l'éditeur de l'admin Angular)."""
 
     queryset = Block.objects.all().order_by("page", "order", "id")
@@ -120,12 +162,12 @@ class BlockViewSet(viewsets.ModelViewSet):
         return Response({"status": "ok"})
 
 
-class NewsViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
+class NewsViewSet(PublicReadCacheMixin, PublishedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = NewsSerializer
     queryset = News.objects.all()
 
 
-class ProjectViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
+class ProjectViewSet(PublicReadCacheMixin, PublishedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     queryset = Project.objects.all()
 
@@ -137,7 +179,7 @@ class ProjectViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
         return qs
 
 
-class PartnerViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
+class PartnerViewSet(PublicReadCacheMixin, PublishedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = PartnerSerializer
     queryset = Partner.objects.all()
 
@@ -160,7 +202,7 @@ class PartnerViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class TestimonialViewSet(PublishedQuerysetMixin, viewsets.ModelViewSet):
+class TestimonialViewSet(PublicReadCacheMixin, PublishedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = TestimonialSerializer
     queryset = Testimonial.objects.all()
 
