@@ -150,6 +150,9 @@ jobs:
   deploy:
     needs: [lint-backend, lint-frontend, backend-tests, frontend-tests, e2e-tests]
     runs-on: ubuntu-latest
+    # OIDC sub is repo:Foxugly/foxugly_website:environment:production (matches the
+    # foxugly-deploy role trust). Also enables GitHub environment protection rules.
+    environment: production
     steps:
       - uses: actions/checkout@v5
 
