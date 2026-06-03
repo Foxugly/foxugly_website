@@ -7,7 +7,11 @@ import multiprocessing
 import os
 
 # Écoute en local ; nginx fait le frontal (TLS + statics + frontend).
-bind = os.environ.get("GUNICORN_BIND", "127.0.0.1:8000")
+# Défaut = 8004, le port assigné à foxugly (un port localhost unique par site :
+# 8000 quizonline · 8001 pushit-api · 8002 ical · 8003 trainingmanager · 8004 foxugly).
+# Codé en dur sur la bonne valeur → correct même sans /run/foxugly/.env (oneshot SSM
+# en échec, lancement manuel, debug…). GUNICORN_BIND reste un override possible.
+bind = os.environ.get("GUNICORN_BIND", "127.0.0.1:8004")
 
 # 2*cpu+1 par défaut, surchargé via env si besoin.
 workers = int(os.environ.get("GUNICORN_WORKERS", multiprocessing.cpu_count() * 2 + 1))
