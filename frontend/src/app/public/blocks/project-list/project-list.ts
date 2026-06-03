@@ -53,7 +53,7 @@ export class ProjectList implements OnInit {
 
   protected visible = computed(() => {
     const s = this.sector();
-    let list = s ? this.all().filter(p => p.sector === s) : this.all();
+    const list = s ? this.all().filter(p => p.sector === s) : this.all();
     const limit = this.c.limit;
     return limit && limit > 0 ? list.slice(0, limit) : list;
   });

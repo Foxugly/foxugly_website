@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "schematicCollections": ["angular-eslint"]
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -22,6 +23,10 @@
           "options": {
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
+            "outputPath": {
+              "base": "dist/frontend",
+              "media": "media-assets"
+            },
             "inlineStyleLanguage": "scss",
             "assets": [
               {
@@ -29,10 +34,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "node_modules/grapesjs/dist/css/grapes.min.css",
-              "src/styles.scss"
-            ]
+            "styles": ["node_modules/grapesjs/dist/css/grapes.min.css", "src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -75,6 +77,12 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
+          }
         }
       }
     }

@@ -91,6 +91,8 @@ aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_DEBUG --value
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
 aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
+# GUNICORN_BIND : override explicite. gunicorn.conf.py a désormais 8004 en défaut codé
+# en dur → ce paramètre n'est plus indispensable (conservé pour rester explicite).
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8004
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 2
 
@@ -108,7 +110,9 @@ aws ssm put-parameter $R --type String       --name /foxugly/prod/SITE_URL      
 # PostgreSQL (optionnel) : /foxugly/prod/DJANGO_DB_ENGINE=postgresql + DJANGO_DB_*  (voir .env.example)
 ```
 
-Voir `backend/.env.example` pour la liste. Après modif : `sudo systemctl restart foxugly-env foxugly-gunicorn`.
+Voir `backend/.env.example` pour la liste. Après modif (rotation de secrets), en tant
+que `django` via le drop-in sudoers (§5, sans le sudo global de `ubuntu`) :
+`sudo /usr/bin/systemctl restart foxugly-env foxugly-gunicorn`.
 
 ---
 
@@ -144,8 +148,59 @@ aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
 ```bash
 sudo systemctl status foxugly-gunicorn    # Gunicorn foxugly (:8004)
 sudo journalctl -u foxugly-gunicorn -f    # logs applicatifs
-sudo systemctl restart foxugly-gunicorn
+sudo /usr/bin/systemctl restart foxugly-gunicorn       # accordé à django (drop-in ci-dessous)
 ```
+
+### Permissions sudo (least-privilege) — `foxugly-deploy`
+
+`django` peut piloter ses propres services **sans le sudo global de `ubuntu`**, via le
+drop-in `/etc/sudoers.d/foxugly-deploy` (modèle versionné : `deploy/sudoers.d/foxugly-deploy`).
+Commandes accordées (chemins absolus, args exacts) :
+
+| Commande | Usage |
+|---|---|
+| `sudo /usr/bin/systemctl restart foxugly-gunicorn` | redéploiement / restart app |
+| `sudo /usr/bin/systemctl restart foxugly-env` | rotation des secrets (re-fetch SSM) |
+| `sudo /usr/bin/systemctl restart foxugly-env foxugly-gunicorn` | les deux d'un coup |
+| `sudo /usr/sbin/nginx -t` + `sudo /usr/bin/systemctl reload nginx` | recharge nginx à chaud |
+
+**Durcissement** : le drop-in n'accorde **aucune** modification d'unit (`cp …service`,
+`daemon-reload`) — les units restent gérées en root, hors de l'arbre éditable par django.
+
+Installation (par **root**, jamais par `deploy.sh`) — valider la syntaxe AVANT, sinon
+tout `sudo` casse :
+```bash
+command -v systemctl nginx   # confirmer /usr/bin/systemctl et /usr/sbin/nginx (Ubuntu 24.04)
+sudo visudo -c -f deploy/sudoers.d/foxugly-deploy
+sudo install -m 0440 -o root -g root deploy/sudoers.d/foxugly-deploy /etc/sudoers.d/foxugly-deploy
+sudo visudo -c
+sudo -u django sudo -n /usr/bin/systemctl reload nginx && echo OK   # test
+```
+
+### Permissions (schéma durable)
+
+L'arbre `/var/www/django_websites/foxugly` est maintenu en **`django:www-data`**,
+**dossiers 750 / fichiers 640** (bits d'exécution conservés pour `.venv`), **sans
+écriture-groupe ni accès "autres"**. nginx (`www-data`) lit les statics et traverse
+l'arbre via le groupe ; personne d'autre n'y accède. Ce schéma est appliqué et
+maintenu automatiquement :
+
+- `deploy.sh` / `bootstrap-instance.sh` posent `umask 027` puis, en fin de
+  déploiement, normalisent : `chown -R django:www-data` + `chmod -R g-w,o-rwx`
+  (idempotent, ne *retire* que des droits, préserve les `+x`).
+- `foxugly-gunicorn.service` porte `UMask=0027` → les fichiers créés au runtime
+  (WAL/journal SQLite, uploads media) naissent déjà en 640/750.
+
+> **Report serveur de la modif `UMask=`** : l'unit est resynchronisée
+> automatiquement par `deploy.sh` (`cmp` → `cp` → `daemon-reload` → `restart`),
+> donc elle prend effet **au prochain déploiement**. Pour l'appliquer
+> immédiatement sans déploiement complet :
+> ```bash
+> sudo cp deploy/foxugly-gunicorn.service /etc/systemd/system/
+> sudo systemctl daemon-reload && sudo systemctl restart foxugly-gunicorn
+> ```
+> Re-normaliser un arbre existant (one-shot) : `sudo chown -R django:www-data
+> /var/www/django_websites/foxugly && sudo chmod -R g-w,o-rwx /var/www/django_websites/foxugly`.
 
 ---
 

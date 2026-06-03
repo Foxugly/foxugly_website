@@ -52,6 +52,8 @@ export interface ContactPayload {
   email: string;
   subject?: string;
   message: string;
+  /** Champ leurre anti-spam : toujours vide pour un humain (masqué en CSS). */
+  website?: string;
 }
 
 /* ---- Collections ---- */

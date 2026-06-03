@@ -12,11 +12,15 @@ Wants=foxugly-env.service
 Type=simple
 User=django
 Group=www-data
+# Fichiers créés au runtime (WAL/journal SQLite, uploads media) en 640/750,
+# sans écriture-groupe ni accès "autres" — cohérent avec le schéma de déploiement.
+UMask=0027
 WorkingDirectory=/var/www/django_websites/foxugly/backend
 # Secrets dans /run (tmpfs) : régénérés au boot depuis SSM Parameter Store.
 # /run/foxugly est wipé à chaque reboot → voir foxugly-env.service (DEPLOY.md §2).
-# C'est ce fichier qui fournit GUNICORN_BIND=127.0.0.1:8004 (gunicorn.conf.py
-# défaut 8000) → indispensable pour que nginx (upstream :8004) trouve l'app.
+# Peut fournir GUNICORN_BIND en override ; le défaut de gunicorn.conf.py est
+# désormais 127.0.0.1:8004 (port assigné à foxugly) → l'app écoute au bon endroit
+# pour nginx (upstream :8004) même si cet EnvironmentFile venait à manquer.
 EnvironmentFile=/run/foxugly/.env
 ExecStart=/var/www/django_websites/foxugly/backend/.venv/bin/gunicorn -c gunicorn.conf.py foxugly.wsgi:application
 Restart=always

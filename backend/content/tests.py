@@ -1,6 +1,7 @@
 """Tests de l'API content : lectures publiques, permissions staff, auth, contact."""
 from django.contrib.auth.models import User
 from django.core import signing
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -9,6 +10,9 @@ from .models import Block, ContactMessage, News, Page, Partner, SiteSettings
 
 class BaseAPITestCase(APITestCase):
     def setUp(self):
+        # Le throttling DRF stocke son compteur dans le cache par défaut : on le
+        # vide avant chaque test pour que les limites ne fuient pas d'un test à l'autre.
+        cache.clear()
         self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
         self.plain = User.objects.create_user("plain", password="pw", is_staff=False)
         self.page = Page.objects.create(slug="accueil", title="Accueil", order=1)
@@ -152,3 +156,35 @@ class ContactTests(BaseAPITestCase):
     def test_contact_validates_required_fields(self):
         r = self.client.post("/api/contact/", {"name": "Jean"}, format="json")
         self.assertEqual(r.status_code, 400)
+
+    def test_contact_honeypot_silently_ignored(self):
+        # Champ leurre rempli → réponse 201 identique, mais rien n'est stocké.
+        r = self.client.post(
+            "/api/contact/",
+            {"name": "Bot", "email": "bot@x.com", "message": "spam", "website": "http://spam"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(ContactMessage.objects.count(), 0)
+
+    def test_contact_is_throttled(self):
+        # 5/min : la 6e soumission consécutive est refusée (429).
+        payload = {"name": "Jean", "email": "jean@x.com", "message": "Bonjour"}
+        for _ in range(5):
+            self.assertEqual(
+                self.client.post("/api/contact/", payload, format="json").status_code, 201
+            )
+        r = self.client.post("/api/contact/", payload, format="json")
+        self.assertEqual(r.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class ThrottleTests(BaseAPITestCase):
+    def test_magic_link_is_throttled(self):
+        # 5/min sur la demande de magic link (anti-flood de la boîte staff).
+        for _ in range(5):
+            self.assertEqual(
+                self.client.post("/api/auth/magic-link/", {"email": "x@x.com"},
+                                  format="json").status_code, 200
+            )
+        r = self.client.post("/api/auth/magic-link/", {"email": "x@x.com"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_429_TOO_MANY_REQUESTS)

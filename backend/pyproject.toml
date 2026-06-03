@@ -1,0 +1,16 @@
+[tool.ruff]
+# Lint du backend Django. Migrations exclues (générées).
+target-version = "py312"
+line-length = 100
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes, I isort, B bugbear, UP pyupgrade, DJ flake8-django.
+select = ["E", "W", "F", "I", "B", "UP", "DJ"]
+ignore = [
+    "E501",  # longueur de ligne gérée par le formateur, pas bloquante
+]
+
+[tool.ruff.lint.per-file-ignores]
+"settings.py" = ["E402"]  # imports tardifs volontaires (sentry sous condition)
+"tests.py" = ["S101"]     # assert autorisé dans les tests

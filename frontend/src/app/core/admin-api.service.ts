@@ -4,8 +4,7 @@ import { Observable, map } from 'rxjs';
 
 import { API_BASE } from './api.config';
 import {
-  Block, News, PageDetail, PageNav, Paginated, Partner, Project,
-  SiteSettings, Testimonial,
+  Block, PageDetail, PageNav, Paginated, SiteSettings,
 } from './models';
 
 /** Nom de ressource de collection côté API. */

@@ -1,8 +1,8 @@
 # foxugly — site web
 
 Site de **foxugly**, cabinet de **coaching agile indépendant** (une seule personne :
-Renaud Vilain). Stack : **Django REST** (backend, fait) + **Angular / PrimeNG**
-(frontend, à construire).
+Renaud Vilain). Stack : **Django REST** (backend) + **Angular / PrimeNG** (frontend).
+Les deux sont **construits, testés et déployés** (CI GitHub Actions → AWS EC2).
 
 ## Structure du dépôt
 
@@ -13,8 +13,10 @@ foxugly website/
 │   │   partenaires.html, admin.html
 │   ├── style.css  ← tokens couleurs, composants (source de la charte)
 │   └── assets/    logo.svg, logo-white.svg, favicon.ico
-├── backend/       Django + DRF — TERMINÉ et vérifié (voir backend/README.md)
-└── frontend/      Angular + PrimeNG — À CONSTRUIRE
+├── backend/       Django + DRF — API REST (voir backend/README.md)
+├── frontend/      Angular + PrimeNG — site public + back-office admin
+├── e2e/           Tests Playwright (public, admin, contact)
+└── deploy/        Units systemd, nginx, scripts AWS (voir DEPLOY.md)
 ```
 
 ## Charte graphique (reprendre depuis maquette/style.css)
@@ -27,10 +29,17 @@ foxugly website/
 - **Logo / favicon** : dans `maquette/assets/` (logo navy + version blanche pour fonds sombres).
 - Hero et CTA sur fond navy dégradé avec halo vert discret.
 
-## Backend (déjà fait)
+## Backend
 
-API REST sur `http://127.0.0.1:8000/api/`. Lecture publique, écriture = admin connecté.
-Lancer : voir `backend/README.md` (`migrate` → `seed_content` → `runserver`).
+API REST sur `http://127.0.0.1:8001/api/` (8000 est pris par QuizOnline en local).
+Lecture publique, écriture = admin connecté. Auth : session DRF **+ magic-link** par
+email (passwordless). Lancer : voir `backend/README.md` (`migrate` → `seed_content` →
+`runserver 8001`). Lint : `ruff check .` (config dans `backend/pyproject.toml`).
+
+Endpoints publics non authentifiés qui écrivent (`/api/contact/`, `/api/auth/magic-link/`)
+sont **throttlés** (`ScopedRateThrottle`, 5/min) ; le contact a aussi un **honeypot**
+(`website`). Sentry (erreurs) est actif si `SENTRY_DSN` est défini, avec `release` = SHA
+du commit (fichier `backend/RELEASE` écrit par la CI).
 
 Le contenu suit un modèle **page builder** : chaque page = une liste de **blocs**
 typés et ordonnés, dont tout le texte est dans `content` (JSON) → tout est éditable.
@@ -47,27 +56,29 @@ Endpoints :
 
 Slugs des pages : `accueil`, `qui-suis-je`, `agilite`, `projets`, `partenaires`.
 
-Types de blocs (`block_type`) à rendre côté Angular :
+Types de blocs (`block_type`), un composant Angular par type :
 `hero`, `page_hero`, `richtext`, `stats`, `cards`, `timeline`, `accordion`,
-`testimonials`, `logo_wall`, `news_list`, `project_list`, `partner_list`, `cta`.
+`testimonials`, `logo_wall`, `news_list`, `project_list`, `partner_list`, `cta`,
+`contact_form`, `contact_info`.
 La forme de `content` pour chaque type est visible via `seed_content.py` et l'API.
 
-## Frontend à construire (Angular + PrimeNG)
+## Frontend (Angular + PrimeNG) — construit
 
-Objectifs :
-1. **Site public piloté par l'API** : router sur `/:slug`, charger `GET /api/pages/<slug>/`,
-   et rendre chaque bloc via un composant dédié par `block_type` (un « block renderer »
-   qui mappe type → composant). Nav et footer alimentés par `/api/pages/` et `/api/settings/`.
-2. **Fidélité au design** de `maquette/` (réutiliser les tokens de `style.css`, thème PrimeNG
-   personnalisé navy + émeraude).
-3. **Back-office admin Angular** sur-mesure : login (session DRF), CRUD des pages/blocs/
-   collections, **réordonnancement des blocs** (drag-drop, PrimeNG OrderList/dnd) appelant
-   `/api/blocks/reorder/`. Édition des textes = formulaires par type de bloc.
-4. **Étape ultérieure** : couche d'édition visuelle (GrapesJS) par-dessus le modèle de blocs.
-   Ne PAS réécrire un page builder visuel from scratch.
+Implémenté et conforme à la maquette. Repères pour intervenir :
 
-Détails : PrimeNG `DataView`/`Card` (projets, partenaires), `Timeline`, `Accordion`,
-filtres projets par secteur, filtres partenaires par `kind`. Responsive + menu burger mobile.
+1. **Site public piloté par l'API** : route `/:slug` → `GET /api/pages/<slug>/`, rendu par
+   `public/block-renderer/` qui mappe `block_type` → composant (`public/blocks/<type>/`).
+   Nav/footer alimentés par `/api/pages/` et `/api/settings/` (`layout/`).
+2. **Back-office admin** (`admin/`) : login session DRF + magic-link, CRUD pages/blocs/
+   collections, réordonnancement des blocs (drag-drop) via `/api/blocks/reorder/`. Les
+   formulaires d'édition sont typés par bloc (`admin/blocks/block-form` + `block-schema`).
+   `admin/collections/collection-editor` est **générique** (piloté par une config par
+   ressource). Auth/CSRF/proxy : voir la mémoire « Admin dev setup ».
+3. **Éditeur visuel GrapesJS** (`admin/pages/visual-editor`) par-dessus le modèle de blocs —
+   le modèle de l'API reste la source de vérité. Ne PAS réécrire un page builder from scratch.
+4. **Qualité** : tests Vitest (`*.spec.ts`) + e2e Playwright (`e2e/`) ; lint `ng lint`
+   (ESLint, config `frontend/eslint.config.js` — a11y de l'admin en warnings). Sentry
+   frontend actif si DSN, `release` = SHA injecté au build CI (`sentry.config.ts`).
 
 ## Contexte produit
 
