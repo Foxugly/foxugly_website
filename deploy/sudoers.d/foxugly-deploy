@@ -1,27 +1,33 @@
 # /etc/sudoers.d/foxugly-deploy — sudo least-privilege pour les déploiements/ops foxugly.
 #
-# Accorde à l'utilisateur `django` UNIQUEMENT le contrôle de service (restart/reload),
-# pour ne plus dépendre du sudo global de `ubuntu`. Aligné sur quizonline-deploy /
-# pushit-deploy, avec un DURCISSEMENT : aucune commande `cp ... /etc/systemd/...` n'est
-# accordée. Les fichiers d'unit restent gérés hors de l'arbre django (édités en root) ;
-# autoriser leur copie depuis l'arbre applicatif (éditable par django) permettrait à un
-# `django` compromis d'écrire une unit malveillante exécutée en root.
+# Accorde à `django` UNIQUEMENT le contrôle de service (restart/reload), pour ne plus
+# dépendre du sudo global de `ubuntu`. Aligné sur quizonline-deploy / pushit-*, avec un
+# DURCISSEMENT (guideline §3.10) : AUCUN `cp ... /etc/systemd/...` ni `daemon-reload`.
+# L'arbre /var/www/django_websites/foxugly est éditable par `django` ; autoriser la
+# copie/installation d'une unit depuis cet arbre = écrire une unit exécutée en root =
+# escalade (faille corrigée sur pushit-frontend / quizonline). Les units restent gérées
+# en root, hors de l'arbre django.
+#
+# Chemins : on invoque `/bin/systemctl` (et le runbook DEPLOY.md fait pareil) pour être
+# TEXTUELLEMENT identique au chemin appelé et cohérent avec les autres drop-ins de la box.
+# Sur Ubuntu 24.04 (usrmerge, /bin -> /usr/bin) `/bin/systemctl` et `/usr/bin/systemctl`
+# sont le même inode — on ne dépend donc PAS de la canonicalisation sudo : règle et
+# appelant identiques. nginx = /usr/sbin/nginx.
+# (Vérifs : `command -v systemctl nginx`, `ls -li /bin/systemctl /usr/bin/systemctl`.)
 #
 # Installation (par ROOT, depuis une copie vérifiée — JAMAIS par le script de déploiement) :
 #   sudo visudo -c -f deploy/sudoers.d/foxugly-deploy
 #   sudo install -m 0440 -o root -g root deploy/sudoers.d/foxugly-deploy /etc/sudoers.d/foxugly-deploy
 #   sudo visudo -c
-#
-# Chemins ABSOLUS (vérifiés via `command -v systemctl nginx` sur Ubuntu 24.04).
 
 Cmnd_Alias FOXUGLY_SVC = \
-      /usr/bin/systemctl restart foxugly-gunicorn, \
-      /usr/bin/systemctl restart foxugly-env, \
-      /usr/bin/systemctl restart foxugly-env foxugly-gunicorn
+      /bin/systemctl restart foxugly-gunicorn, \
+      /bin/systemctl restart foxugly-env, \
+      /bin/systemctl restart foxugly-env foxugly-gunicorn
 
 Cmnd_Alias FOXUGLY_WEB = \
       /usr/sbin/nginx -t, \
-      /usr/bin/systemctl reload nginx
+      /bin/systemctl reload nginx
 
 django ALL=(root) NOPASSWD: FOXUGLY_SVC, FOXUGLY_WEB
 

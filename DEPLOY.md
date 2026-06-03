@@ -112,7 +112,7 @@ aws ssm put-parameter $R --type String       --name /foxugly/prod/SITE_URL      
 
 Voir `backend/.env.example` pour la liste. Après modif (rotation de secrets), en tant
 que `django` via le drop-in sudoers (§5, sans le sudo global de `ubuntu`) :
-`sudo /usr/bin/systemctl restart foxugly-env foxugly-gunicorn`.
+`sudo /bin/systemctl restart foxugly-env foxugly-gunicorn`.
 
 ---
 
@@ -148,7 +148,7 @@ aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
 ```bash
 sudo systemctl status foxugly-gunicorn    # Gunicorn foxugly (:8004)
 sudo journalctl -u foxugly-gunicorn -f    # logs applicatifs
-sudo /usr/bin/systemctl restart foxugly-gunicorn       # accordé à django (drop-in ci-dessous)
+sudo /bin/systemctl restart foxugly-gunicorn           # accordé à django (drop-in ci-dessous)
 ```
 
 ### Permissions sudo (least-privilege) — `foxugly-deploy`
@@ -159,10 +159,10 @@ Commandes accordées (chemins absolus, args exacts) :
 
 | Commande | Usage |
 |---|---|
-| `sudo /usr/bin/systemctl restart foxugly-gunicorn` | redéploiement / restart app |
-| `sudo /usr/bin/systemctl restart foxugly-env` | rotation des secrets (re-fetch SSM) |
-| `sudo /usr/bin/systemctl restart foxugly-env foxugly-gunicorn` | les deux d'un coup |
-| `sudo /usr/sbin/nginx -t` + `sudo /usr/bin/systemctl reload nginx` | recharge nginx à chaud |
+| `sudo /bin/systemctl restart foxugly-gunicorn` | redéploiement / restart app |
+| `sudo /bin/systemctl restart foxugly-env` | rotation des secrets (re-fetch SSM) |
+| `sudo /bin/systemctl restart foxugly-env foxugly-gunicorn` | les deux d'un coup |
+| `sudo /usr/sbin/nginx -t` + `sudo /bin/systemctl reload nginx` | recharge nginx à chaud |
 
 **Durcissement** : le drop-in n'accorde **aucune** modification d'unit (`cp …service`,
 `daemon-reload`) — les units restent gérées en root, hors de l'arbre éditable par django.
@@ -170,11 +170,11 @@ Commandes accordées (chemins absolus, args exacts) :
 Installation (par **root**, jamais par `deploy.sh`) — valider la syntaxe AVANT, sinon
 tout `sudo` casse :
 ```bash
-command -v systemctl nginx   # confirmer /usr/bin/systemctl et /usr/sbin/nginx (Ubuntu 24.04)
+command -v systemctl nginx   # /usr/bin/systemctl == /bin/systemctl (usrmerge) ; /usr/sbin/nginx
 sudo visudo -c -f deploy/sudoers.d/foxugly-deploy
 sudo install -m 0440 -o root -g root deploy/sudoers.d/foxugly-deploy /etc/sudoers.d/foxugly-deploy
 sudo visudo -c
-sudo -u django sudo -n /usr/bin/systemctl reload nginx && echo OK   # test
+sudo -u django sudo -n /bin/systemctl reload nginx && echo OK       # test
 ```
 
 ### Permissions (schéma durable)
