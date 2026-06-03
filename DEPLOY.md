@@ -147,6 +147,31 @@ sudo journalctl -u foxugly-gunicorn -f    # logs applicatifs
 sudo systemctl restart foxugly-gunicorn
 ```
 
+### Permissions (schéma durable)
+
+L'arbre `/var/www/django_websites/foxugly` est maintenu en **`django:www-data`**,
+**dossiers 750 / fichiers 640** (bits d'exécution conservés pour `.venv`), **sans
+écriture-groupe ni accès "autres"**. nginx (`www-data`) lit les statics et traverse
+l'arbre via le groupe ; personne d'autre n'y accède. Ce schéma est appliqué et
+maintenu automatiquement :
+
+- `deploy.sh` / `bootstrap-instance.sh` posent `umask 027` puis, en fin de
+  déploiement, normalisent : `chown -R django:www-data` + `chmod -R g-w,o-rwx`
+  (idempotent, ne *retire* que des droits, préserve les `+x`).
+- `foxugly-gunicorn.service` porte `UMask=0027` → les fichiers créés au runtime
+  (WAL/journal SQLite, uploads media) naissent déjà en 640/750.
+
+> **Report serveur de la modif `UMask=`** : l'unit est resynchronisée
+> automatiquement par `deploy.sh` (`cmp` → `cp` → `daemon-reload` → `restart`),
+> donc elle prend effet **au prochain déploiement**. Pour l'appliquer
+> immédiatement sans déploiement complet :
+> ```bash
+> sudo cp deploy/foxugly-gunicorn.service /etc/systemd/system/
+> sudo systemctl daemon-reload && sudo systemctl restart foxugly-gunicorn
+> ```
+> Re-normaliser un arbre existant (one-shot) : `sudo chown -R django:www-data
+> /var/www/django_websites/foxugly && sudo chmod -R g-w,o-rwx /var/www/django_websites/foxugly`.
+
 ---
 
 ## 6. Monitoring / santé

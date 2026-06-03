@@ -23,6 +23,10 @@
           "options": {
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
+            "outputPath": {
+              "base": "dist/frontend",
+              "media": "media-assets"
+            },
             "inlineStyleLanguage": "scss",
             "assets": [
               {

@@ -8,9 +8,14 @@
 #
 set -euo pipefail
 
+# Schéma de permissions durable : tout fichier créé pendant le déploiement naît
+# en 640 (fichiers) / 750 (dossiers), sans écriture-groupe ni accès "autres".
+umask 027
+
 # Backend lancé en tant que django → ownership cohérent (db SQLite, venv, statics).
 sudo -u django bash <<'INNER'
 set -euo pipefail
+umask 027   # le sous-shell sudo repart d'un environnement neuf → on le refixe
 cd /var/www/django_websites/foxugly/backend
 [ -d .venv ] || python3 -m venv .venv
 . .venv/bin/activate
@@ -70,4 +75,12 @@ done
 
 systemctl enable foxugly-gunicorn        # persistance au boot (idempotent)
 systemctl restart foxugly-gunicorn
+
+# --- Normalisation des permissions (idempotente, sûre) ---
+# Rejoue le schéma durable après migrate/collectstatic/venv. chmod SYMBOLIQUE
+# `g-w,o-rwx` : ne retire que l'écriture-groupe et tout accès "autres" — ne touche
+# JAMAIS aux bits d'exécution (binaires .venv) ni aux bits du propriétaire.
+APP_DIR=/var/www/django_websites/foxugly
+chown -R django:www-data "$APP_DIR"
+chmod -R g-w,o-rwx "$APP_DIR"
 echo "✓ Déploiement foxugly terminé."

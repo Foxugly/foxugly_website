@@ -12,6 +12,9 @@ Wants=foxugly-env.service
 Type=simple
 User=django
 Group=www-data
+# Fichiers créés au runtime (WAL/journal SQLite, uploads media) en 640/750,
+# sans écriture-groupe ni accès "autres" — cohérent avec le schéma de déploiement.
+UMask=0027
 WorkingDirectory=/var/www/django_websites/foxugly/backend
 # Secrets dans /run (tmpfs) : régénérés au boot depuis SSM Parameter Store.
 # /run/foxugly est wipé à chaque reboot → voir foxugly-env.service (DEPLOY.md §2).

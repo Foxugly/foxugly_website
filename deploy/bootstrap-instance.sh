@@ -6,6 +6,8 @@
 # Installe les services + nginx, initialise la base, démarre Gunicorn.
 #
 set -euo pipefail
+# Schéma de permissions durable dès le 1er déploiement (cf. deploy.sh).
+umask 027
 # Force le rôle d'instance pour aws (ignore d'éventuelles creds certbot par défaut).
 export AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_CONFIG_FILE=/dev/null
 
@@ -21,6 +23,7 @@ test -s /run/foxugly/.env && echo "  /run/foxugly/.env OK" || { echo "  ERREUR: 
 echo "== Backend (en tant que django) =="
 sudo -u django bash <<'INNER'
 set -euo pipefail
+umask 027
 set -a; . /run/foxugly/.env; set +a
 cd /var/www/django_websites/foxugly/backend
 python3 -m venv .venv
@@ -53,6 +56,13 @@ rm -f /etc/nginx/sites-enabled/foxugly.com     /etc/nginx/sites-available/foxugl
 cp /var/www/django_websites/foxugly/deploy/nginx.conf "/etc/nginx/sites-available/${DOMAIN}"
 ln -sf "/etc/nginx/sites-available/${DOMAIN}" "/etc/nginx/sites-enabled/${DOMAIN}"
 nginx -t && systemctl reload nginx
+
+# --- Normalisation des permissions (idempotente, sûre) ---
+# Identique à deploy.sh : propriétaire django:www-data, retrait écriture-groupe
+# et accès "autres", bits d'exécution préservés.
+APP_DIR=/var/www/django_websites/foxugly
+chown -R django:www-data "$APP_DIR"
+chmod -R g-w,o-rwx "$APP_DIR"
 
 echo
 echo "✓ Bootstrap terminé. Le site doit répondre sur https://www.foxugly.com"
