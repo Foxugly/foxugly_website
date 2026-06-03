@@ -2,7 +2,7 @@
 # /run est un tmpfs (effacé à chaque reboot), d'où la régénération à chaque démarrage.
 #
 # Pré-requis : les paramètres existent sous le préfixe /foxugly/prod/ (type String
-# ou SecureString), p.ex. /foxugly/prod/DJANGO_SECRET_KEY. Le rôle IAM de l'instance
+# ou SecureString), p.ex. /foxugly/prod/SECRET_KEY. Le rôle IAM de l'instance
 # doit autoriser ssm:GetParametersByPath (+ kms:Decrypt pour les SecureString).
 # Adapter le préfixe / la région si besoin.
 [Unit]

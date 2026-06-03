@@ -25,11 +25,11 @@ aws s3api put-public-access-block --bucket foxugly-deploy \
 ```bash
 R="--region eu-west-1"
 KEY=$(python3 -c "import secrets;print(secrets.token_urlsafe(50))")
-aws ssm put-parameter $R --type SecureString --name /foxugly/prod/DJANGO_SECRET_KEY --value "$KEY"
-aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_DEBUG --value False
-aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
-aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
-aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
+aws ssm put-parameter $R --type SecureString --name /foxugly/prod/SECRET_KEY --value "$KEY"
+aws ssm put-parameter $R --type String --name /foxugly/prod/DEBUG --value False
+aws ssm put-parameter $R --type String --name /foxugly/prod/ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
+aws ssm put-parameter $R --type String --name /foxugly/prod/CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
+aws ssm put-parameter $R --type String --name /foxugly/prod/SECURE --value True
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8004
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_WORKERS --value 2
 aws ssm put-parameter $R --type String --name /foxugly/prod/SITE_URL --value https://www.foxugly.com

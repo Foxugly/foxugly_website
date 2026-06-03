@@ -10,31 +10,31 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Sécurité ---------------------------------------------------------------
 # Défauts « fail-safe » : DEBUG=False par défaut (à activer explicitement en dev
-# via DJANGO_DEBUG=True), et jamais la clé de dev prévisible en production.
-DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
+# via DEBUG=True), et jamais la clé de dev prévisible en production.
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 _RUNNING_TESTS = "test" in sys.argv
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY")
 if not SECRET_KEY:
     if DEBUG or _RUNNING_TESTS:
         SECRET_KEY = "dev-insecure-change-me-in-production"
     else:
         # Production sans clé explicite : on en génère une aléatoire (jamais
         # prévisible) plutôt que de tourner sur une valeur connue. Les sessions
-        # sont invalidées à chaque redémarrage tant que DJANGO_SECRET_KEY n'est
+        # sont invalidées à chaque redémarrage tant que SECRET_KEY n'est
         # pas défini → à corriger en priorité (voir warning ci-dessous).
         import secrets
         import warnings
 
         SECRET_KEY = secrets.token_urlsafe(64)
         warnings.warn(
-            "DJANGO_SECRET_KEY non défini en production : clé aléatoire générée. "
-            "Définissez DJANGO_SECRET_KEY pour des sessions stables.",
+            "SECRET_KEY non défini en production : clé aléatoire générée. "
+            "Définissez SECRET_KEY pour des sessions stables.",
             RuntimeWarning,
             stacklevel=2,
         )
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # --- Applications -----------------------------------------------------------
 INSTALLED_APPS = [
@@ -86,25 +86,25 @@ WSGI_APPLICATION = "foxugly.wsgi.application"
 
 # --- Base de données --------------------------------------------------------
 # Pilotée par l'environnement. SQLite par défaut ; PostgreSQL si
-# DJANGO_DB_ENGINE=postgresql (nécessite psycopg, voir requirements.txt).
-_DB_ENGINE = os.environ.get("DJANGO_DB_ENGINE", "sqlite3").lower()
+# DB_ENGINE=postgresql (nécessite psycopg, voir requirements.txt).
+_DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite3").lower()
 if _DB_ENGINE in ("postgresql", "postgres", "psql"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("DJANGO_DB_NAME", "foxugly"),
-            "USER": os.environ.get("DJANGO_DB_USER", "foxugly"),
-            "PASSWORD": os.environ.get("DJANGO_DB_PASSWORD", ""),
-            "HOST": os.environ.get("DJANGO_DB_HOST", "127.0.0.1"),
-            "PORT": os.environ.get("DJANGO_DB_PORT", "5432"),
-            "CONN_MAX_AGE": int(os.environ.get("DJANGO_DB_CONN_MAX_AGE", "60")),
+            "NAME": os.environ.get("DB_NAME", "foxugly"),
+            "USER": os.environ.get("DB_USER", "foxugly"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+            "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+            "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
         }
     }
 else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": os.environ.get("DJANGO_DB_NAME", str(BASE_DIR / "db.sqlite3")),
+            "NAME": os.environ.get("DB_NAME", str(BASE_DIR / "db.sqlite3")),
         }
     }
 
@@ -135,7 +135,7 @@ LOGGING = {
     "handlers": {
         "console": {"class": "logging.StreamHandler", "formatter": "standard"},
     },
-    "root": {"handlers": ["console"], "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO")},
+    "root": {"handlers": ["console"], "level": os.environ.get("LOG_LEVEL", "INFO")},
     "loggers": {
         # Bruit des requêtes serveur réduit (les erreurs 5xx restent loggées par
         # django.request) ; notre app et django au niveau configurable.
@@ -178,15 +178,15 @@ REST_FRAMEWORK = {
     # gunicorn la limite effective est multipliée par le nombre de workers. Pour une
     # limite stricte et partagée, configurer un cache commun (Redis ou DatabaseCache).
     "DEFAULT_THROTTLE_RATES": {
-        "contact": os.environ.get("DJANGO_THROTTLE_CONTACT", "5/min"),
-        "magic_link": os.environ.get("DJANGO_THROTTLE_MAGIC_LINK", "5/min"),
+        "contact": os.environ.get("THROTTLE_CONTACT", "5/min"),
+        "magic_link": os.environ.get("THROTTLE_MAGIC_LINK", "5/min"),
     },
 }
 
 # --- CORS (frontend Angular) ------------------------------------------------
 # Origines autorisées à appeler l'API. Ajuster selon ton port Angular (4200).
 CORS_ALLOWED_ORIGINS = os.environ.get(
-    "DJANGO_CORS_ORIGINS",
+    "CORS_ORIGINS",
     "http://localhost:4200,http://127.0.0.1:4200",
 ).split(",")
 CORS_ALLOW_CREDENTIALS = True
@@ -195,18 +195,18 @@ CORS_ALLOW_CREDENTIALS = True
 # requêtes d'écriture). Le frontend Angular (dev) appelle via proxy depuis
 # localhost:4200, c'est cette origine qui arrive dans l'en-tête Origin.
 CSRF_TRUSTED_ORIGINS = os.environ.get(
-    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "CSRF_TRUSTED_ORIGINS",
     "http://localhost:4200,http://127.0.0.1:4200",
 ).split(",")
 
 # --- Sécurité en production (HTTPS derrière nginx) ----------------------------
-# Activé via DJANGO_SECURE=True une fois le TLS en place sur le reverse proxy.
-if os.environ.get("DJANGO_SECURE", "False") == "True":
+# Activé via SECURE=True une fois le TLS en place sur le reverse proxy.
+if os.environ.get("SECURE", "False") == "True":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SSL_REDIRECT", "True") == "True"
-    SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "0"))
+    SECURE_SSL_REDIRECT = os.environ.get("SSL_REDIRECT", "True") == "True"
+    SECURE_HSTS_SECONDS = int(os.environ.get("HSTS_SECONDS", "0"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True

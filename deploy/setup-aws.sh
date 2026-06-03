@@ -18,15 +18,15 @@ aws s3api put-public-access-block --bucket "$BUCKET" \
 echo
 
 echo "== 2/4  Paramètres SSM (/foxugly/prod/) =="
-KEY=$(aws ssm get-parameter $R --name /foxugly/prod/DJANGO_SECRET_KEY --with-decryption \
+KEY=$(aws ssm get-parameter $R --name /foxugly/prod/SECRET_KEY --with-decryption \
         --query Parameter.Value --output text 2>/dev/null \
       || python3 -c "import secrets;print(secrets.token_urlsafe(50))")
 put() { aws ssm put-parameter $R --overwrite --type "$1" --name "$2" --value "$3" >/dev/null && echo "  $2"; }
-put SecureString /foxugly/prod/DJANGO_SECRET_KEY "$KEY"
-put String /foxugly/prod/DJANGO_DEBUG False
-put String /foxugly/prod/DJANGO_ALLOWED_HOSTS foxugly.com,www.foxugly.com
-put String /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS https://foxugly.com,https://www.foxugly.com
-put String /foxugly/prod/DJANGO_SECURE True
+put SecureString /foxugly/prod/SECRET_KEY "$KEY"
+put String /foxugly/prod/DEBUG False
+put String /foxugly/prod/ALLOWED_HOSTS foxugly.com,www.foxugly.com
+put String /foxugly/prod/CSRF_TRUSTED_ORIGINS https://foxugly.com,https://www.foxugly.com
+put String /foxugly/prod/SECURE True
 put String /foxugly/prod/GUNICORN_BIND 127.0.0.1:8004
 put String /foxugly/prod/GUNICORN_WORKERS 2
 put String /foxugly/prod/SITE_URL https://www.foxugly.com

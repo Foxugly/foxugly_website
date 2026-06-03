@@ -111,7 +111,7 @@ jobs:
       - name: Démarrer le backend (migrate + seed + admin)
         working-directory: backend
         env:
-          DJANGO_DEBUG: 'true'   # DEBUG défaut False désormais ; dev/e2e l'activent
+          DEBUG: 'true'   # DEBUG défaut False désormais ; dev/e2e l'activent
         run: |
           pip install -r requirements.txt
           python manage.py migrate --noinput

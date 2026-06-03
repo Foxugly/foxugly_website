@@ -86,11 +86,11 @@ qui lit `/foxugly/prod/*`. Créer les paramètres une fois :
 ```bash
 KEY=$(python -c "from django.core.management.utils import get_random_secret_key as g; print(g())")
 R="--region eu-west-1"
-aws ssm put-parameter $R --type SecureString --name /foxugly/prod/DJANGO_SECRET_KEY --value "$KEY"
-aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_DEBUG --value False
-aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
-aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
-aws ssm put-parameter $R --type String --name /foxugly/prod/DJANGO_SECURE --value True
+aws ssm put-parameter $R --type SecureString --name /foxugly/prod/SECRET_KEY --value "$KEY"
+aws ssm put-parameter $R --type String --name /foxugly/prod/DEBUG --value False
+aws ssm put-parameter $R --type String --name /foxugly/prod/ALLOWED_HOSTS --value foxugly.com,www.foxugly.com
+aws ssm put-parameter $R --type String --name /foxugly/prod/CSRF_TRUSTED_ORIGINS --value https://foxugly.com,https://www.foxugly.com
+aws ssm put-parameter $R --type String --name /foxugly/prod/SECURE --value True
 # GUNICORN_BIND : override explicite. gunicorn.conf.py a désormais 8004 en défaut codé
 # en dur → ce paramètre n'est plus indispensable (conservé pour rester explicite).
 aws ssm put-parameter $R --type String --name /foxugly/prod/GUNICORN_BIND --value 127.0.0.1:8004
@@ -107,7 +107,7 @@ aws ssm put-parameter $R --type String       --name /foxugly/prod/CONTACT_RECIPI
 aws ssm put-parameter $R --type String       --name /foxugly/prod/SITE_URL           --value https://www.foxugly.com
 
 # Sentry (optionnel) :  /foxugly/prod/SENTRY_DSN
-# PostgreSQL (optionnel) : /foxugly/prod/DJANGO_DB_ENGINE=postgresql + DJANGO_DB_*  (voir .env.example)
+# PostgreSQL (optionnel) : /foxugly/prod/DB_ENGINE=postgresql + DB_*  (voir .env.example)
 ```
 
 Voir `backend/.env.example` pour la liste. Après modif (rotation de secrets), en tant
@@ -253,16 +253,16 @@ sudo -u django bash -c '
 
 # 3. params SSM (depuis CloudShell/poste admin — l'instance n'a pas ssm:PutParameter)
 R="--region eu-west-1"
-aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_ENGINE   --value postgresql
-aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_NAME     --value foxugly
-aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_USER     --value foxugly
-aws ssm put-parameter $R --type SecureString --name /foxugly/prod/DJANGO_DB_PASSWORD --value "$PWD_FOX"
-aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_HOST     --value 127.0.0.1
-aws ssm put-parameter $R --type String       --name /foxugly/prod/DJANGO_DB_PORT     --value 5432
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DB_ENGINE   --value postgresql
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DB_NAME     --value foxugly
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DB_USER     --value foxugly
+aws ssm put-parameter $R --type SecureString --name /foxugly/prod/DB_PASSWORD --value "$PWD_FOX"
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DB_HOST     --value 127.0.0.1
+aws ssm put-parameter $R --type String       --name /foxugly/prod/DB_PORT     --value 5432
 
 # 4. régénérer l'env + créer le schéma + charger les données dans postgres
 sudo systemctl restart foxugly-env
-grep '^DJANGO_DB' /run/foxugly/.env            # vérifier les 6 vars
+grep '^DB' /run/foxugly/.env            # vérifier les 6 vars
 sudo -u django bash -c '
   set -a; . /run/foxugly/.env; set +a
   cd /var/www/django_websites/foxugly/backend && . .venv/bin/activate
@@ -288,5 +288,5 @@ de prod Postgres sereins). Backups Postgres : prévoir un `pg_dump` régulier de
   une sauvegarde si l'instance est éphémère (ou bucket S3).
 - **Frontend** : buildé en CI et livré dans le bundle ; nginx le sert directement.
 - Passage à **PostgreSQL** : aucun changement de code (`settings.py` est déjà piloté
-  par env). Définir `DJANGO_DB_ENGINE=postgresql` + `DJANGO_DB_*` dans SSM `/foxugly/prod/`
+  par env). Définir `DB_ENGINE=postgresql` + `DB_*` dans SSM `/foxugly/prod/`
   (`psycopg` est déjà dans `requirements.txt`).

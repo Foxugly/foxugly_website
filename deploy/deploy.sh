@@ -24,8 +24,8 @@ pip install -r requirements.txt
 # Charge la vraie clé secrète (lecture LITTÉRALE via grep/cut, sans sourcer le
 # .env → pas d'eval shell sur des valeurs à caractères spéciaux) pour que migrate
 # /collectstatic n'utilisent pas une clé aléatoire (warning + clé non stable).
-DJANGO_SECRET_KEY=$(grep -m1 '^DJANGO_SECRET_KEY=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
-export DJANGO_SECRET_KEY
+SECRET_KEY=$(grep -m1 '^SECRET_KEY=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
+export SECRET_KEY
 python manage.py migrate --noinput          # jamais seed_content (préserve le contenu)
 python manage.py collectstatic --noinput
 INNER
