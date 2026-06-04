@@ -21,11 +21,16 @@ cd /var/www/django_websites/foxugly/backend
 . .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
-# Charge la vraie clé secrète (lecture LITTÉRALE via grep/cut, sans sourcer le
-# .env → pas d'eval shell sur des valeurs à caractères spéciaux) pour que migrate
-# /collectstatic n'utilisent pas une clé aléatoire (warning + clé non stable).
-SECRET_KEY=$(grep -m1 '^SECRET_KEY=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
-export SECRET_KEY
+# Charge TOUT l'env runtime (lecture LITTÉRALE clé=valeur, sans `source` → pas
+# d'eval shell sur des valeurs à caractères spéciaux) pour que migrate /
+# collectstatic tournent avec les MÊMES settings que gunicorn : SECRET_KEY + les
+# DB_* (PostgreSQL) + le reste. Sans les DB_*, foxugly.settings retombe sur
+# sqlite et migrate viserait un db.sqlite3 local au lieu de la prod PostgreSQL.
+while IFS='=' read -r _k _v || [ -n "$_k" ]; do
+    case "$_k" in ''|\#*) continue ;; esac
+    export "$_k=$_v"
+done < /run/foxugly/.env
+unset _k _v
 python manage.py migrate --noinput          # jamais seed_content (préserve le contenu)
 python manage.py collectstatic --noinput
 INNER
