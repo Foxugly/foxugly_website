@@ -36,13 +36,13 @@ aws ssm put-parameter $R --type String --name /foxugly/prod/SITE_URL --value htt
 ```
 Vérif : `aws ssm get-parameters-by-path $R --path /foxugly/prod/ --query "Parameters[].Name" --output text`
 
-## 3. Étendre le rôle de l'instance (quizonline-ec2)
+## 3. Étendre le rôle de l'instance (foxugly-fleet-ec2)
 ```bash
-aws iam put-role-policy --role-name quizonline-ec2 \
+aws iam put-role-policy --role-name foxugly-fleet-ec2 \
   --policy-name foxugly-ssm-s3-read \
   --policy-document file://deploy/iam/instance-role-policy.json
 ```
-Vérif : `aws iam list-role-policies --role-name quizonline-ec2`
+Vérif : `aws iam list-role-policies --role-name foxugly-fleet-ec2`
 
 ## 4. Rôle de déploiement GitHub (foxugly-deploy)
 ```bash

@@ -5,7 +5,7 @@ quizonline** et suit le même pattern (secrets SSM `/foxugly/prod/`, bundles S3
 `foxugly-deploy/builds/`).
 
 Deux choses à faire :
-1. **Étendre le rôle d'instance existant `quizonline-ec2`** avec les permissions
+1. **Étendre le rôle d'instance existant `foxugly-fleet-ec2`** avec les permissions
    foxugly (lecture SSM `/foxugly/prod` + S3 `foxugly-deploy`).
 2. **Créer le rôle CI `foxugly-deploy`** (OIDC GitHub) pour uploader le bundle et
    déclencher SSM.
@@ -22,13 +22,13 @@ aws s3api put-public-access-block --bucket foxugly-deploy \
   --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 ```
 
-## 1. Étendre le rôle d'instance `quizonline-ec2`
+## 1. Étendre le rôle d'instance `foxugly-fleet-ec2`
 
 Pas de nouveau rôle ni de nouveau profil : on ajoute une policy inline à celui qui
 est déjà attaché à l'EC2.
 
 ```bash
-aws iam put-role-policy --role-name quizonline-ec2 \
+aws iam put-role-policy --role-name foxugly-fleet-ec2 \
   --policy-name foxugly-ssm-s3-read \
   --policy-document file://deploy/iam/instance-role-policy.json
 ```
@@ -64,7 +64,7 @@ Secrets GitHub (Settings → Secrets → Actions) : `AWS_DEPLOY_ROLE_ARN` + `EC2
 `AWS_REGION` optionnel (défaut `eu-west-1`).
 
 ## Fichiers
-- `instance-role-policy.json` — à attacher à `quizonline-ec2` (SSM `/foxugly/prod` + S3 GetObject).
+- `instance-role-policy.json` — à attacher à `foxugly-fleet-ec2` (SSM `/foxugly/prod` + S3 GetObject).
 - `deploy-role-permissions.json` — rôle CI : S3 PutObject `foxugly-deploy/builds/*`,
   SSM SendCommand (RunShellScript + instance) + lecture du résultat.
 - `deploy-role-trust.json` — trust OIDC restreint à `Foxugly/foxugly_website` branche `main`.

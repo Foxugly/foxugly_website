@@ -20,7 +20,7 @@ CI (push main) → build front+back → s3://foxugly-deploy/builds/ → SSM → 
 
 ## 1. Provisioning (une seule fois)
 
-Sur l'instance (déjà gérée par SSM via le rôle `quizonline-ec2`). Pré-requis :
+Sur l'instance (déjà gérée par SSM via le rôle `foxugly-fleet-ec2`). Pré-requis :
 `python3`+`venv`, `nginx`, **AWS CLI** (pour `s3 cp`). Pas besoin de node/git.
 
 ```bash
@@ -124,7 +124,7 @@ que `django` via le drop-in sudoers (§5, sans le sudo global de `ubuntu`) :
 | `EC2_INSTANCE_ID` | `i-0123456789abcdef0` | instance cible (celle de quizonline) |
 | `AWS_REGION` | `eu-west-1` | **optionnel** (défaut `eu-west-1`) |
 
-Création des rôles + bucket : **`deploy/iam/README.md`** (étend `quizonline-ec2`,
+Création des rôles + bucket : **`deploy/iam/README.md`** (étend `foxugly-fleet-ec2`,
 crée `foxugly-deploy` OIDC, bucket `foxugly-deploy`).
 
 ---
