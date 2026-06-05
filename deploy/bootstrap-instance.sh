@@ -14,10 +14,10 @@ export AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_CONFIG_FILE=/dev/null
 chown -R django:www-data /var/www/django_websites/foxugly
 
 echo "== Services systemd =="
-cp /var/www/django_websites/foxugly/deploy/foxugly-env.service /etc/systemd/system/
+cp /var/www/django_websites/foxugly/deploy/foxugly-env-fetch.service /etc/systemd/system/
 cp /var/www/django_websites/foxugly/deploy/foxugly-gunicorn.service /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now foxugly-env          # écrit /run/foxugly/.env depuis SSM
+systemctl enable --now foxugly-env-fetch          # écrit /run/foxugly/.env depuis SSM
 test -s /run/foxugly/.env && echo "  /run/foxugly/.env OK" || { echo "  ERREUR: .env vide (SSM ?)"; exit 1; }
 
 echo "== Backend (en tant que django) =="
@@ -45,7 +45,7 @@ systemctl enable --now foxugly-gunicorn     # Gunicorn :8004
 echo "== nginx =="
 # Pattern sites-available + symlink sites-enabled (cohérent avec les autres sites
 # de la box). Nom du vhost = hostname de SITE_URL (déjà chargé depuis SSM par
-# foxugly-env.service dans /run/foxugly/.env ; pas de second appel SSM).
+# foxugly-env-fetch.service dans /run/foxugly/.env ; pas de second appel SSM).
 SITE_URL=$(grep -m1 '^SITE_URL=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
 DOMAIN="${SITE_URL#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
 [ -n "$DOMAIN" ] || DOMAIN=foxugly.com

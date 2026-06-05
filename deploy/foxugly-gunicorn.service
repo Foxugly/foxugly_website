@@ -3,10 +3,10 @@
 #             sudo systemctl daemon-reload && sudo systemctl enable --now foxugly-gunicorn
 [Unit]
 Description=foxugly Gunicorn (Django)
-After=network.target foxugly-env.service
-# Soft dep : foxugly-env.service génère /run/foxugly/.env (secrets + GUNICORN_BIND)
+After=network.target foxugly-env-fetch.service
+# Soft dep : foxugly-env-fetch.service génère /run/foxugly/.env (secrets + GUNICORN_BIND)
 # depuis SSM au boot ; il est lancé avant. Sinon (autre mécanisme), Wants est ignoré.
-Wants=foxugly-env.service
+Wants=foxugly-env-fetch.service
 
 [Service]
 Type=simple
@@ -17,7 +17,7 @@ Group=www-data
 UMask=0027
 WorkingDirectory=/var/www/django_websites/foxugly/backend
 # Secrets dans /run (tmpfs) : régénérés au boot depuis SSM Parameter Store.
-# /run/foxugly est wipé à chaque reboot → voir foxugly-env.service (DEPLOY.md §2).
+# /run/foxugly est wipé à chaque reboot → voir foxugly-env-fetch.service (DEPLOY.md §2).
 # Peut fournir GUNICORN_BIND en override ; le défaut de gunicorn.conf.py est
 # désormais 127.0.0.1:8004 (port assigné à foxugly) → l'app écoute au bon endroit
 # pour nginx (upstream :8004) même si cet EnvironmentFile venait à manquer.

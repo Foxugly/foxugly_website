@@ -76,7 +76,7 @@ sudo apt-get install -y python3-venv
 
 ## 7. Premier déploiement (bootstrap)
 Voir **`DEPLOY.md §1`** (récupérer le dernier bundle S3, l'extraire, installer
-`foxugly-env.service` + `foxugly-gunicorn.service` + le vhost nginx, puis `migrate` +
+`foxugly-env-fetch.service` + `foxugly-gunicorn.service` + le vhost nginx, puis `migrate` +
 `seed_content` + `createsuperuser`). Les push suivants se déploient seuls.
 
 > ⚠ Sur l'instance, l'`aws s3 cp` du déploiement doit passer par le **rôle d'instance**,

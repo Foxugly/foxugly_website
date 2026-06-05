@@ -22,8 +22,8 @@
 
 Cmnd_Alias FOXUGLY_SVC = \
       /bin/systemctl restart foxugly-gunicorn, \
-      /bin/systemctl restart foxugly-env, \
-      /bin/systemctl restart foxugly-env foxugly-gunicorn
+      /bin/systemctl restart foxugly-env-fetch, \
+      /bin/systemctl restart foxugly-env-fetch foxugly-gunicorn
 
 Cmnd_Alias FOXUGLY_WEB = \
       /usr/sbin/nginx -t, \

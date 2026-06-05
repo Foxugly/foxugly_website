@@ -43,9 +43,9 @@ INNER
 # autres sites de la box).
 #
 # Le nom du vhost = hostname de SITE_URL, déjà chargé depuis SSM par
-# foxugly-env.service dans /run/foxugly/.env (on ne relit PAS SSM ici). Fallback
+# foxugly-env-fetch.service dans /run/foxugly/.env (on ne relit PAS SSM ici). Fallback
 # foxugly.com si la variable est absente.
-SITE_URL=$(grep -m1 '^SITE_URL=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
+SITE_URL=$(grep -m1 -E '^(FRONTEND_BASE_URL|SITE_URL)=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
 DOMAIN="${SITE_URL#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
 [ -n "$DOMAIN" ] || DOMAIN=foxugly.com
 
@@ -70,7 +70,7 @@ fi
 # le service (chemin, options, bind…) sans repasser par bootstrap-instance.sh.
 # daemon-reload uniquement si un fichier a réellement changé.
 units_changed=0
-for unit in foxugly-env.service foxugly-gunicorn.service; do
+for unit in foxugly-env-fetch.service foxugly-gunicorn.service; do
     if ! cmp -s "/var/www/django_websites/foxugly/deploy/$unit" "/etc/systemd/system/$unit"; then
         cp "/var/www/django_websites/foxugly/deploy/$unit" "/etc/systemd/system/$unit"
         units_changed=1
