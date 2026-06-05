@@ -32,8 +32,8 @@ put String /foxugly/prod/GUNICORN_WORKERS 2
 put String /foxugly/prod/SITE_URL https://www.foxugly.com
 echo
 
-echo "== 3/4  Étendre le rôle d'instance (quizonline-ec2) =="
-aws iam put-role-policy --role-name quizonline-ec2 \
+echo "== 3/4  Étendre le rôle d'instance (foxugly-fleet-ec2) =="
+aws iam put-role-policy --role-name foxugly-fleet-ec2 \
   --policy-name foxugly-ssm-s3-read \
   --policy-document file://deploy/iam/instance-role-policy.json && echo "  OK"
 echo
