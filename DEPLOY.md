@@ -13,7 +13,7 @@ Internet ─► nginx (443/80, partagé)
             Gunicorn foxugly  [systemd: foxugly-gunicorn.service, :8004]
             secrets : /run/foxugly/.env  [systemd: foxugly-env.service ← SSM Parameter Store]
 
-CI (push main) → build front+back → s3://foxugly-deploy/builds/ → SSM → deploy/deploy.sh
+CI (push main) → build front+back → s3://foxugly-deploy/builds/foxugly-frontend/ → SSM → deploy/deploy.sh
 ```
 
 ---
@@ -40,8 +40,8 @@ Comme tout le code arrive **par le bundle**, l'ordre de bootstrap est :
 
 ```bash
 # Récupère et extrait le dernier bundle
-LATEST=$(aws s3 ls s3://foxugly-deploy/builds/ --region eu-west-1 | sort | tail -1 | awk '{print $4}')
-aws s3 cp "s3://foxugly-deploy/builds/$LATEST" /tmp/b.tgz --region eu-west-1
+LATEST=$(aws s3 ls s3://foxugly-deploy/builds/foxugly-frontend/ --region eu-west-1 | sort | tail -1 | awk '{print $4}')
+aws s3 cp "s3://foxugly-deploy/builds/foxugly-frontend/$LATEST" /tmp/b.tgz --region eu-west-1
 sudo tar xzf /tmp/b.tgz -C /var/www/django_websites/foxugly
 sudo chown -R django:www-data /var/www/django_websites/foxugly
 
@@ -135,8 +135,8 @@ Le bundle existe déjà en S3 (produit par la CI). Depuis un poste autorisé :
 ```bash
 aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
   --document-name AWS-RunShellScript --parameters '{"commands":[
-    "B=$(aws s3 ls s3://foxugly-deploy/builds/ --region eu-west-1 | sort | tail -1 | awk \"{print \\$4}\")",
-    "aws s3 cp s3://foxugly-deploy/builds/$B /tmp/$B --region eu-west-1",
+    "B=$(aws s3 ls s3://foxugly-deploy/builds/foxugly-frontend/ --region eu-west-1 | sort | tail -1 | awk \"{print \\$4}\")",
+    "aws s3 cp s3://foxugly-deploy/builds/foxugly-frontend/$B /tmp/$B --region eu-west-1",
     "tar xzf /tmp/$B -C /var/www/django_websites/foxugly && chown -R django:www-data /var/www/django_websites/foxugly",
     "bash /var/www/django_websites/foxugly/deploy/deploy.sh"]}'
 ```

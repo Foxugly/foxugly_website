@@ -203,7 +203,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload du bundle vers S3
-        run: aws s3 cp "$BUNDLE" "s3://$BUCKET/builds/$BUNDLE"
+        run: aws s3 cp "$BUNDLE" "s3://$BUCKET/builds/foxugly-frontend/$BUNDLE"
 
       - name: Déploiement via SSM
         env:
@@ -214,7 +214,7 @@ jobs:
           { "commands": [
             "set -eu",
             "export AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_CONFIG_FILE=/dev/null",
-            "aws s3 cp s3://$BUCKET/builds/$BUNDLE /tmp/$BUNDLE --region $AWS_REGION",
+            "aws s3 cp s3://$BUCKET/builds/foxugly-frontend/$BUNDLE /tmp/$BUNDLE --region $AWS_REGION",
             "mkdir -p /var/www/django_websites/foxugly",
             "tar xzf /tmp/$BUNDLE -C /var/www/django_websites/foxugly",
             "chown -R django:www-data /var/www/django_websites/foxugly",
