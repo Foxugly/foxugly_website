@@ -2,7 +2,7 @@
 
 Compte `362629935151`, région `eu-west-1`. foxugly tourne sur la **même instance que
 quizonline** et suit le même pattern (secrets SSM `/foxugly/prod/`, bundles S3
-`foxugly-deploy/builds/foxugly-frontend/`).
+`foxugly-deploy/builds/foxugly/`).
 
 Deux choses à faire :
 1. **Étendre le rôle d'instance existant `foxugly-fleet-ec2`** avec les permissions
