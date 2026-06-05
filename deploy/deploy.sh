@@ -42,10 +42,10 @@ INNER
 # est valide. Pattern sites-available + symlink sites-enabled (cohérent avec les
 # autres sites de la box).
 #
-# Le nom du vhost = hostname de SITE_URL, déjà chargé depuis SSM par
+# Le nom du vhost = hostname de FRONTEND_BASE_URL, déjà chargé depuis SSM par
 # foxugly-env-fetch.service dans /run/foxugly/.env (on ne relit PAS SSM ici). Fallback
 # foxugly.com si la variable est absente.
-SITE_URL=$(grep -m1 -E '^(FRONTEND_BASE_URL|SITE_URL)=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
+SITE_URL=$(grep -m1 '^FRONTEND_BASE_URL=' /run/foxugly/.env 2>/dev/null | cut -d= -f2- || true)
 DOMAIN="${SITE_URL#http://}"; DOMAIN="${DOMAIN#https://}"; DOMAIN="${DOMAIN%%/*}"
 [ -n "$DOMAIN" ] || DOMAIN=foxugly.com
 

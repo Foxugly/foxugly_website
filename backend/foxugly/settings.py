@@ -236,10 +236,7 @@ if SENTRY_DSN:
 
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        # Canonical SSM name is SENTRY_ENVIRONMENT (fleet OPERATIONS.md §3.14);
-        # fall back to the legacy SENTRY_ENV until the SSM rename is migrated.
-        environment=os.environ.get("SENTRY_ENVIRONMENT")
-        or os.environ.get("SENTRY_ENV", "production"),
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
         release=_sentry_release(),
         # Tracing désactivé par défaut (0.0) ; monter si besoin de perf monitoring.
         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
