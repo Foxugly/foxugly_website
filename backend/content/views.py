@@ -296,7 +296,12 @@ class MagicLinkRequestView(APIView):
         )
         if user:
             token = signing.dumps({"uid": user.pk, "ll": str(user.last_login)}, salt=MAGIC_SALT)
-            base = os.environ.get("SITE_URL", "https://www.foxugly.com").rstrip("/")
+            # Canonical SSM name is FRONTEND_BASE_URL (fleet OPERATIONS.md §3.14);
+            # fall back to the legacy SITE_URL until the SSM rename is migrated.
+            base = (
+                os.environ.get("FRONTEND_BASE_URL")
+                or os.environ.get("SITE_URL", "https://www.foxugly.com")
+            ).rstrip("/")
             link = f"{base}/admin/magic?token={token}"
             try:
                 if graph_configured():
