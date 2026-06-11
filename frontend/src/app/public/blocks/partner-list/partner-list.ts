@@ -15,7 +15,7 @@ import { ContentService } from '../../../core/content.service';
           <div class="block-head text-center">
             @if (c.eyebrow) { <span class="eyebrow">{{ c.eyebrow }}</span> }
             @if (c.title) { <h2 class="section-title">{{ c.title }}</h2> }
-            @if (c.lead) { <p class="section-lead center-block">{{ c.lead }}</p> }
+            @if (c.lead) { <div class="section-lead center-block rich" [innerHTML]="c.lead"></div> }
           </div>
         }
         <div class="grid" [class.grid-4]="c.kind === 'client'" [class.grid-3]="c.kind !== 'client'">
@@ -29,7 +29,7 @@ import { ContentService } from '../../../core/content.service';
               <h4>{{ p.name }}</h4>
               @if (p.support_type) { <span class="tag orange">{{ p.support_type }}</span> }
               @if (p.sector_or_cause) { <span class="tag">{{ p.sector_or_cause }}</span> }
-              @if (p.description) { <p>{{ p.description }}</p> }
+              @if (p.description) { <div class="rich" [innerHTML]="p.description"></div> }
               @if (p.link) { <a class="partner-link" [href]="p.link" target="_blank" rel="noopener">En savoir plus →</a> }
             </div>
           }

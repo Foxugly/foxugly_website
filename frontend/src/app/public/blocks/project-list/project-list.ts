@@ -12,7 +12,7 @@ import { ContentService } from '../../../core/content.service';
           <div class="block-head text-center">
             @if (c.eyebrow) { <span class="eyebrow">{{ c.eyebrow }}</span> }
             @if (c.title) { <h2 class="section-title">{{ c.title }}</h2> }
-            @if (c.lead) { <p class="section-lead center-block">{{ c.lead }}</p> }
+            @if (c.lead) { <div class="section-lead center-block rich" [innerHTML]="c.lead"></div> }
           </div>
         }
 
@@ -30,7 +30,7 @@ import { ContentService } from '../../../core/content.service';
             <div class="card">
               @if (p.sector) { <span class="tag">{{ p.sector }}</span> }
               <h3 style="margin-top:.8rem;">{{ p.title }}</h3>
-              <p>{{ p.description }}</p>
+              <div class="rich" [innerHTML]="p.description"></div>
               @if (p.result) { <p style="margin-top:1rem;"><span class="tag orange">{{ p.result }}</span></p> }
             </div>
           }

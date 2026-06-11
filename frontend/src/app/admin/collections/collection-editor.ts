@@ -6,8 +6,9 @@ import { map } from 'rxjs';
 import { FileUpload, FileSelectEvent } from 'primeng/fileupload';
 
 import { AdminApiService, CollectionName } from '../../core/admin-api.service';
+import { RichEditorComponent } from '../../shared/rich-editor/rich-editor.component';
 
-interface ColField { key: string; label: string; kind: 'text' | 'textarea' | 'number' | 'bool' | 'select' | 'date' | 'image'; options?: { value: string; label: string }[]; }
+interface ColField { key: string; label: string; kind: 'text' | 'textarea' | 'richtext' | 'number' | 'bool' | 'select' | 'date' | 'image'; options?: { value: string; label: string }[]; }
 interface ColConfig { title: string; primary: string; fields: ColField[]; }
 
 const CONFIGS: Record<CollectionName, ColConfig> = {
@@ -17,8 +18,8 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
       { key: 'title', label: 'Titre', kind: 'text' },
       { key: 'slug', label: 'Slug', kind: 'text' },
       { key: 'category', label: 'Catégorie', kind: 'text' },
-      { key: 'excerpt', label: 'Résumé', kind: 'textarea' },
-      { key: 'body', label: 'Contenu', kind: 'textarea' },
+      { key: 'excerpt', label: 'Résumé', kind: 'richtext' },
+      { key: 'body', label: 'Contenu', kind: 'richtext' },
       { key: 'date', label: 'Date', kind: 'date' },
       { key: 'read_time', label: 'Temps de lecture', kind: 'text' },
       { key: 'order', label: 'Ordre', kind: 'number' },
@@ -30,7 +31,7 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
     fields: [
       { key: 'title', label: 'Titre', kind: 'text' },
       { key: 'sector', label: 'Secteur', kind: 'text' },
-      { key: 'description', label: 'Description', kind: 'textarea' },
+      { key: 'description', label: 'Description', kind: 'richtext' },
       { key: 'result', label: 'Résultat clé', kind: 'text' },
       { key: 'order', label: 'Ordre', kind: 'number' },
       { key: 'is_published', label: 'Publié', kind: 'bool' },
@@ -47,7 +48,7 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
       },
       { key: 'sector_or_cause', label: 'Secteur / cause', kind: 'text' },
       { key: 'support_type', label: 'Forme de soutien (assos)', kind: 'text' },
-      { key: 'description', label: 'Description', kind: 'textarea' },
+      { key: 'description', label: 'Description', kind: 'richtext' },
       { key: 'link', label: 'Lien', kind: 'text' },
       { key: 'order', label: 'Ordre', kind: 'number' },
       { key: 'is_published', label: 'Publié', kind: 'bool' },
@@ -56,7 +57,7 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
   testimonials: {
     title: 'Témoignages', primary: 'author',
     fields: [
-      { key: 'quote', label: 'Citation', kind: 'textarea' },
+      { key: 'quote', label: 'Citation', kind: 'richtext' },
       { key: 'author', label: 'Auteur', kind: 'text' },
       { key: 'role', label: 'Rôle / société', kind: 'text' },
       { key: 'initials', label: 'Initiales', kind: 'text' },
@@ -68,7 +69,7 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
 
 @Component({
   selector: 'app-admin-collection-editor',
-  imports: [FormsModule, FileUpload],
+  imports: [FormsModule, FileUpload, RichEditorComponent],
   template: `
     <div class="admin-head">
       <div><h1>{{ config().title }}</h1><p class="sub">{{ rows().length }} élément(s).</p></div>
@@ -109,6 +110,11 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
                 @case ('textarea') {
                   <div class="field"><label>{{ f.label }}</label>
                     <textarea rows="3" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}"></textarea>
+                  </div>
+                }
+                @case ('richtext') {
+                  <div class="field"><label>{{ f.label }}</label>
+                    <app-rich-editor [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}" />
                   </div>
                 }
                 @case ('number') {

@@ -9,7 +9,7 @@ import { Block } from '../../../core/models';
       <div class="wrap">
         @if (c.badge) { <span class="hero-badge"><span class="dot"></span> {{ c.badge }}</span> }
         <h1>{{ c.title }}</h1>
-        @if (c.text) { <p>{{ c.text }}</p> }
+        @if (c.text) { <div class="rich" [innerHTML]="c.text"></div> }
       </div>
     </header>
   `,

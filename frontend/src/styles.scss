@@ -179,6 +179,21 @@ section.block { padding: clamp(3rem, 7vw, 5.5rem) 0; }
 .richtext p { color: var(--ink-soft); font-size: 1.06rem; margin-bottom: 1.1rem; }
 .cert-list { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.4rem; }
 
+/* ---------- Rich text (HTML éditable via l'éditeur enrichi de l'admin) ----------
+   Rendu de contenu HTML autorisé par l'admin (gras, italique, listes, liens),
+   nettoyé par le DomSanitizer d'Angular (`[innerHTML]`). Couleur héritée du
+   contexte (paragraphe courant / lead) ; pas de gros titres. */
+.rich { color: inherit; }
+.rich > :first-child { margin-top: 0; }
+.rich > :last-child { margin-bottom: 0; }
+.rich p { margin: 0 0 .9rem; }
+.rich ul, .rich ol { margin: 0 0 .9rem; padding-left: 1.4rem; }
+.rich li { margin-bottom: .35rem; }
+.rich a { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.rich a:hover { color: var(--accent-dark); }
+.rich strong, .rich b { font-weight: 700; color: var(--ink); }
+.rich em, .rich i { font-style: italic; }
+
 /* ---------- Form ---------- */
 .form-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow); max-width: 560px; margin-inline: auto; }
 .field { margin-bottom: 1.1rem; }

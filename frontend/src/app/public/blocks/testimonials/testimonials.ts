@@ -19,7 +19,7 @@ import { ContentService } from '../../../core/content.service';
           @for (t of (items$ | async); track t.id) {
             <div class="quote-card">
               <div class="mark">“</div>
-              <p>{{ t.quote }}</p>
+              <div class="rich" [innerHTML]="t.quote"></div>
               <div class="quote-author">
                 <div class="avatar">{{ t.initials }}</div>
                 <div><strong>{{ t.author }}</strong><small>{{ t.role }}</small></div>

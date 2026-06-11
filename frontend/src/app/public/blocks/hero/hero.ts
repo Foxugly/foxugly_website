@@ -13,7 +13,7 @@ import { LinkBtn } from '../../link-btn/link-btn';
         <div>
           @if (c.badge) { <span class="hero-badge"><span class="dot"></span> {{ c.badge }}</span> }
           <h1>{{ before }}<span class="hl">{{ c.highlight }}</span>{{ after }}</h1>
-          <p>{{ c.text }}</p>
+          <div class="rich" [innerHTML]="c.text"></div>
           <div class="hero-actions">
             @if (c.primary_cta) {
               <app-link-btn [href]="c.primary_cta.href" [label]="c.primary_cta.label + ' →'" cssClass="btn btn-primary" />

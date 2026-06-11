@@ -17,7 +17,7 @@ import { Block } from '../../../core/models';
               <button class="acc-head" type="button" (click)="toggle($index)">
                 {{ item.title }} <span class="chev">⌄</span>
               </button>
-              <div class="acc-body"><div class="acc-body-inner">{{ item.text }}</div></div>
+              <div class="acc-body"><div class="acc-body-inner rich" [innerHTML]="item.text"></div></div>
             </div>
           }
         </div>

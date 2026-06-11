@@ -11,7 +11,7 @@ import { LinkBtn } from '../../link-btn/link-btn';
       <div class="wrap">
         <div class="cta">
           <h2>{{ c.title }}</h2>
-          @if (c.text) { <p>{{ c.text }}</p> }
+          @if (c.text) { <div class="rich" [innerHTML]="c.text"></div> }
           @if (c.cta) {
             <app-link-btn [href]="c.cta.href" [label]="c.cta.label" cssClass="btn btn-ghost" />
           }

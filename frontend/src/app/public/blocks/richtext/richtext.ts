@@ -11,7 +11,12 @@ import { Block } from '../../../core/models';
           @if (c.eyebrow) { <span class="eyebrow">{{ c.eyebrow }}</span> }
           <h2 class="section-title">{{ c.title }}</h2>
         </div>
-        @for (p of c.paragraphs; track $index) { <p>{{ p }}</p> }
+        @if (c.body) {
+          <div class="rich" [innerHTML]="c.body"></div>
+        } @else if (c.paragraphs?.length) {
+          <!-- Repli legacy : contenu seedé avant la migration en richtext. -->
+          @for (p of c.paragraphs; track $index) { <p>{{ p }}</p> }
+        }
         @if (c.certs?.length) {
           <div class="cert-list">
             @for (cert of c.certs; track $index) { <span class="tag orange">{{ cert }}</span> }

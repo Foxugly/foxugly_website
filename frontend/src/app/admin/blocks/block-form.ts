@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { Block } from '../../core/models';
 import { BLOCK_SCHEMAS, Field, emptyContent } from './block-schema';
+import { RichEditorComponent } from '../../shared/rich-editor/rich-editor.component';
 
 /** Payload renvoyé à l'enregistrement d'un bloc. */
 export interface BlockEdit {
@@ -18,7 +19,7 @@ export interface BlockEdit {
  */
 @Component({
   selector: 'app-block-form',
-  imports: [FormsModule],
+  imports: [FormsModule, RichEditorComponent],
   template: `
     <div class="form-grid">
       @for (f of schema; track f.key) {
@@ -35,6 +36,13 @@ export interface BlockEdit {
             <div class="field"><label>{{ f.label }}</label>
               <textarea rows="3" [ngModel]="content[f.key]" (ngModelChange)="content[f.key] = $event"
                         [ngModelOptions]="{ standalone: true }"></textarea>
+            </div>
+          }
+
+          @case ('richtext') {
+            <div class="field"><label>{{ f.label }}</label>
+              <app-rich-editor [ngModel]="content[f.key]" (ngModelChange)="content[f.key] = $event"
+                               [ngModelOptions]="{ standalone: true }" />
             </div>
           }
 
@@ -85,7 +93,10 @@ export interface BlockEdit {
                   <div class="form-grid">
                     @for (sub of f.fields; track sub.key) {
                       <div class="field"><label>{{ sub.label }}</label>
-                        @if (sub.kind === 'textarea') {
+                        @if (sub.kind === 'richtext') {
+                          <app-rich-editor [ngModel]="item[sub.key]" (ngModelChange)="item[sub.key] = $event"
+                                           [ngModelOptions]="{ standalone: true }" />
+                        } @else if (sub.kind === 'textarea') {
                           <textarea rows="2" [ngModel]="item[sub.key]" (ngModelChange)="item[sub.key] = $event"
                                     [ngModelOptions]="{ standalone: true }"></textarea>
                         } @else {

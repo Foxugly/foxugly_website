@@ -4,7 +4,7 @@ import { BlockType } from '../../core/models';
 export interface Field {
   key: string;
   label: string;
-  kind: 'text' | 'textarea' | 'number' | 'bool' | 'select' | 'object' | 'list-obj' | 'list-str';
+  kind: 'text' | 'textarea' | 'richtext' | 'number' | 'bool' | 'select' | 'object' | 'list-obj' | 'list-str';
   options?: { value: string; label: string }[];
   fields?: Field[];   // pour 'object' et la forme d'un item de 'list-obj'
   addLabel?: string;  // libellé du bouton d'ajout pour les listes
@@ -24,7 +24,7 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
     { key: 'badge', label: 'Badge', kind: 'text' },
     { key: 'title', label: 'Titre', kind: 'textarea' },
     { key: 'highlight', label: 'Sous-chaîne du titre à colorer en vert', kind: 'text' },
-    { key: 'text', label: 'Texte', kind: 'textarea' },
+    { key: 'text', label: 'Texte', kind: 'richtext' },
     cta('primary_cta', 'Bouton principal'),
     cta('secondary_cta', 'Bouton secondaire'),
     {
@@ -39,7 +39,7 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
   page_hero: [
     { key: 'badge', label: 'Badge', kind: 'text' },
     { key: 'title', label: 'Titre', kind: 'text' },
-    { key: 'text', label: 'Texte', kind: 'textarea' },
+    { key: 'text', label: 'Texte', kind: 'richtext' },
   ],
   stats: [
     {
@@ -53,20 +53,20 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
   cards: [
     { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
     { key: 'title', label: 'Titre', kind: 'text' },
-    { key: 'lead', label: 'Accroche', kind: 'textarea' },
+    { key: 'lead', label: 'Accroche', kind: 'richtext' },
     {
       key: 'items', label: 'Cartes', kind: 'list-obj', addLabel: 'Ajouter une carte',
       fields: [
         { key: 'icon', label: 'Icône (emoji)', kind: 'text' },
         { key: 'title', label: 'Titre', kind: 'text' },
-        { key: 'text', label: 'Texte', kind: 'textarea' },
+        { key: 'text', label: 'Texte', kind: 'richtext' },
       ],
     },
   ],
   richtext: [
     { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
     { key: 'title', label: 'Titre', kind: 'text' },
-    { key: 'paragraphs', label: 'Paragraphes', kind: 'list-str', addLabel: 'Ajouter un paragraphe' },
+    { key: 'body', label: 'Texte', kind: 'richtext' },
     { key: 'certs', label: 'Certifications / tags', kind: 'list-str', addLabel: 'Ajouter un tag' },
   ],
   timeline: [
@@ -77,7 +77,7 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
       fields: [
         { key: 'step', label: 'N°', kind: 'text' },
         { key: 'title', label: 'Titre', kind: 'text' },
-        { key: 'text', label: 'Texte', kind: 'textarea' },
+        { key: 'text', label: 'Texte', kind: 'richtext' },
       ],
     },
   ],
@@ -88,7 +88,7 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
       key: 'items', label: 'Entrées', kind: 'list-obj', addLabel: 'Ajouter une entrée',
       fields: [
         { key: 'title', label: 'Question / titre', kind: 'text' },
-        { key: 'text', label: 'Réponse / texte', kind: 'textarea' },
+        { key: 'text', label: 'Réponse / texte', kind: 'richtext' },
       ],
     },
   ],
@@ -106,20 +106,20 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
   news_list: [
     { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
     { key: 'title', label: 'Titre', kind: 'text' },
-    { key: 'lead', label: 'Accroche', kind: 'textarea' },
+    { key: 'lead', label: 'Accroche', kind: 'richtext' },
     { key: 'limit', label: 'Nombre à afficher (0 = tous)', kind: 'number' },
   ],
   project_list: [
     { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
     { key: 'title', label: 'Titre', kind: 'text' },
-    { key: 'lead', label: 'Accroche', kind: 'textarea' },
+    { key: 'lead', label: 'Accroche', kind: 'richtext' },
     { key: 'limit', label: 'Nombre à afficher (0 = tous)', kind: 'number' },
     { key: 'filterable', label: 'Afficher les filtres par secteur', kind: 'bool' },
   ],
   partner_list: [
     { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
     { key: 'title', label: 'Titre', kind: 'text' },
-    { key: 'lead', label: 'Accroche', kind: 'textarea' },
+    { key: 'lead', label: 'Accroche', kind: 'richtext' },
     {
       key: 'kind', label: 'Type', kind: 'select',
       options: [
@@ -130,13 +130,13 @@ export const BLOCK_SCHEMAS: Record<BlockType, Field[]> = {
   ],
   cta: [
     { key: 'title', label: 'Titre', kind: 'text' },
-    { key: 'text', label: 'Texte', kind: 'textarea' },
+    { key: 'text', label: 'Texte', kind: 'richtext' },
     cta('cta', 'Bouton'),
   ],
   contact_form: [
     { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
     { key: 'title', label: 'Titre', kind: 'text' },
-    { key: 'lead', label: 'Accroche', kind: 'textarea' },
+    { key: 'lead', label: 'Accroche', kind: 'richtext' },
   ],
   contact_info: [
     { key: 'eyebrow', label: 'Sur-titre', kind: 'text' },
@@ -175,6 +175,7 @@ export function emptyContent(type: BlockType): any {
         case 'list-obj':
         case 'list-str': obj[f.key] = []; break;
         case 'select': obj[f.key] = f.options?.[0]?.value ?? ''; break;
+        case 'richtext': obj[f.key] = ''; break;
         default: obj[f.key] = '';
       }
     }

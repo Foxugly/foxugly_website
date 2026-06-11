@@ -15,7 +15,7 @@ import { Block } from '../../../core/models';
           @for (item of c.items; track $index) {
             <div class="tl-item">
               <div class="tl-dot">{{ item.step }}</div>
-              <div class="tl-body"><h4>{{ item.title }}</h4><p>{{ item.text }}</p></div>
+              <div class="tl-body"><h4>{{ item.title }}</h4><div class="rich" [innerHTML]="item.text"></div></div>
             </div>
           }
         </div>

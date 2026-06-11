@@ -15,14 +15,14 @@ import { NEWS_CATEGORY_TAG } from '../../../core/block-defaults';
         <div class="block-head">
           @if (c.eyebrow) { <span class="eyebrow">{{ c.eyebrow }}</span> }
           <h2 class="section-title">{{ c.title }}</h2>
-          @if (c.lead) { <p class="section-lead">{{ c.lead }}</p> }
+          @if (c.lead) { <div class="section-lead rich" [innerHTML]="c.lead"></div> }
         </div>
         <div class="grid grid-3">
           @for (n of (news$ | async); track n.id) {
             <article class="card">
               @if (n.category) { <span class="tag" [class]="tagClass(n.category)">{{ n.category }}</span> }
               <h3 style="margin-top:.8rem;">{{ n.title }}</h3>
-              <p>{{ n.excerpt }}</p>
+              <div class="rich" [innerHTML]="n.excerpt"></div>
               <p style="margin-top:1rem; color:var(--muted); font-size:.85rem;">
                 @if (n.date) { {{ n.date | date:'d MMMM y' }} }
                 @if (n.date && n.read_time) { · } {{ n.read_time }}

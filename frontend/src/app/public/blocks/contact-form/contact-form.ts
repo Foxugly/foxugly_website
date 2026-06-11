@@ -18,7 +18,7 @@ type FieldErrors = { name?: string; email?: string; message?: string };
         <div class="block-head text-center">
           @if (c.eyebrow) { <span class="eyebrow">{{ c.eyebrow }}</span> }
           <h2 class="section-title">{{ c.title || 'Me contacter' }}</h2>
-          @if (c.lead) { <p class="section-lead center-block">{{ c.lead }}</p> }
+          @if (c.lead) { <div class="section-lead center-block rich" [innerHTML]="c.lead"></div> }
         </div>
 
         @if (sent()) {
