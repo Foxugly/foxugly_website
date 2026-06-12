@@ -18,10 +18,12 @@ describe('AuthService', () => {
   afterEach(() => http.verify());
 
   it('login met à jour le signal user et isAdmin', () => {
-    svc.login('a', 'b').subscribe();
-    http.expectOne('/api/auth/login/').flush({ is_authenticated: true, username: 'a', is_staff: true });
+    svc.login('a@x.com', 'b').subscribe();
+    const req = http.expectOne('/api/auth/login/');
+    expect(req.request.body.email).toBe('a@x.com');
+    req.flush({ is_authenticated: true, email: 'a@x.com', is_staff: true });
     expect(svc.isAdmin()).toBe(true);
-    expect(svc.user()?.username).toBe('a');
+    expect(svc.user()?.email).toBe('a@x.com');
   });
 
   it('requestMagicLink poste l’email', () => {
@@ -35,7 +37,7 @@ describe('AuthService', () => {
     svc.magicLogin('tok').subscribe();
     const req = http.expectOne('/api/auth/magic-login/');
     expect(req.request.body.token).toBe('tok');
-    req.flush({ is_authenticated: true, username: 'a', is_staff: true });
+    req.flush({ is_authenticated: true, email: 'a@x.com', is_staff: true });
     expect(svc.isAdmin()).toBe(true);
   });
 });

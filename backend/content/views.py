@@ -230,7 +230,7 @@ class SiteSettingsView(APIView):
 def _user_payload(user):
     return {
         "is_authenticated": user.is_authenticated,
-        "username": user.username if user.is_authenticated else None,
+        "email": user.email if user.is_authenticated else None,
         "is_staff": bool(getattr(user, "is_staff", False)),
     }
 
@@ -246,14 +246,17 @@ class AuthMeView(APIView):
 
 
 class LoginView(APIView):
-    """Connexion par session DRF : POST {username, password}."""
+    """Connexion par session DRF : POST {email, password}."""
 
     permission_classes = [AllowAny]
 
     def post(self, request):
+        # USERNAME_FIELD = "email" → ModelBackend authentifie sur l'email. On lit
+        # `email` du payload et on le passe comme `username` (clé attendue par
+        # authenticate(), qui correspond au USERNAME_FIELD du modèle utilisateur).
         user = authenticate(
             request,
-            username=request.data.get("username"),
+            username=request.data.get("email"),
             password=request.data.get("password"),
         )
         if user is None or not user.is_staff:

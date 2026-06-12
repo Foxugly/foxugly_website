@@ -30,7 +30,7 @@ import { AuthService } from '../../core/auth.service';
         </nav>
 
         <div class="admin-user">
-          <span>{{ auth.user()?.username }}</span>
+          <span>{{ auth.user()?.email }}</span>
           <button type="button" class="btn-link" (click)="logout()">Se déconnecter</button>
         </div>
       </aside>

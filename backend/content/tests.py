@@ -1,5 +1,5 @@
 """Tests de l'API content : lectures publiques, permissions staff, auth, contact."""
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core import signing
 from django.core.cache import cache
 from rest_framework import status
@@ -7,14 +7,16 @@ from rest_framework.test import APITestCase
 
 from .models import Block, ContactMessage, News, Page, Partner, SiteSettings
 
+User = get_user_model()
+
 
 class BaseAPITestCase(APITestCase):
     def setUp(self):
         # Le throttling DRF stocke son compteur dans le cache par défaut : on le
         # vide avant chaque test pour que les limites ne fuient pas d'un test à l'autre.
         cache.clear()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
-        self.plain = User.objects.create_user("plain", password="pw", is_staff=False)
+        self.staff = User.objects.create_user("staff@x.com", password="pw", is_staff=True)
+        self.plain = User.objects.create_user("plain@x.com", password="pw", is_staff=False)
         self.page = Page.objects.create(slug="accueil", title="Accueil", order=1)
         self.hero = Block.objects.create(page=self.page, block_type=Block.Type.HERO, order=1,
                                          content={"title": "Bonjour"})
@@ -150,7 +152,7 @@ class WritePermissionTests(BaseAPITestCase):
 class AuthTests(BaseAPITestCase):
     def test_login_logout_me(self):
         self.assertFalse(self.client.get("/api/auth/me/").data["is_authenticated"])
-        r = self.client.post("/api/auth/login/", {"username": "staff", "password": "pw"}, format="json")
+        r = self.client.post("/api/auth/login/", {"email": "staff@x.com", "password": "pw"}, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(self.client.get("/api/auth/me/").data["is_authenticated"])
         self.client.post("/api/auth/logout/")
@@ -158,9 +160,9 @@ class AuthTests(BaseAPITestCase):
 
     def test_login_rejects_non_staff_and_bad_password(self):
         self.assertEqual(self.client.post("/api/auth/login/",
-                         {"username": "plain", "password": "pw"}, format="json").status_code, 400)
+                         {"email": "plain@x.com", "password": "pw"}, format="json").status_code, 400)
         self.assertEqual(self.client.post("/api/auth/login/",
-                         {"username": "staff", "password": "nope"}, format="json").status_code, 400)
+                         {"email": "staff@x.com", "password": "nope"}, format="json").status_code, 400)
 
 
 class MagicLinkTests(BaseAPITestCase):

@@ -48,8 +48,13 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     # Local
+    "accounts",
     "content",
 ]
+
+# Modèle utilisateur custom email-only (sans username) — swap mi-projet depuis
+# auth.User (motif canonique de la flotte, OPERATIONS.md §3.16).
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

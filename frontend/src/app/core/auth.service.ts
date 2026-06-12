@@ -6,7 +6,7 @@ import { API_BASE } from './api.config';
 
 export interface AuthUser {
   is_authenticated: boolean;
-  username: string | null;
+  email: string | null;
   is_staff: boolean;
 }
 
@@ -29,16 +29,16 @@ export class AuthService {
       .pipe(tap(u => this._user.set(u)));
   }
 
-  login(username: string, password: string): Observable<AuthUser> {
+  login(email: string, password: string): Observable<AuthUser> {
     return this.http
-      .post<AuthUser>(`${API_BASE}/auth/login/`, { username, password }, this.opts)
+      .post<AuthUser>(`${API_BASE}/auth/login/`, { email, password }, this.opts)
       .pipe(tap(u => this._user.set(u)));
   }
 
   logout(): Observable<unknown> {
     return this.http
       .post(`${API_BASE}/auth/logout/`, {}, this.opts)
-      .pipe(tap(() => this._user.set({ is_authenticated: false, username: null, is_staff: false })));
+      .pipe(tap(() => this._user.set({ is_authenticated: false, email: null, is_staff: false })));
   }
 
   /** Demande l'envoi d'un lien de connexion par email (staff). */

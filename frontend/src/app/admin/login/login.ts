@@ -20,8 +20,8 @@ import { AuthService } from '../../core/auth.service';
         </p>
 
         <div class="field">
-          <label for="u">Identifiant</label>
-          <input id="u" name="username" [(ngModel)]="username" autocomplete="username" required />
+          <label for="u">Email</label>
+          <input id="u" name="email" type="email" [(ngModel)]="email" autocomplete="email" required />
         </div>
         <div class="field">
           <label for="p">Mot de passe</label>
@@ -69,7 +69,7 @@ export class Login {
   private auth = inject(AuthService);
   private router = inject(Router);
 
-  protected username = '';
+  protected email = '';
   protected password = '';
   protected loading = signal(false);
   protected error = signal('');
@@ -81,7 +81,7 @@ export class Login {
   submit() {
     this.error.set('');
     this.loading.set(true);
-    this.auth.login(this.username, this.password).subscribe({
+    this.auth.login(this.email, this.password).subscribe({
       next: () => this.router.navigateByUrl('/admin/dashboard'),
       error: (e) => {
         this.error.set(e?.error?.detail ?? 'Connexion impossible. Réessaie.');
