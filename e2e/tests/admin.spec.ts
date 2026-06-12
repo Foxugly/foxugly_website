@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('admin : connexion par mot de passe → tableau de bord', async ({ page }) => {
   await page.goto('/admin/login');
-  await page.fill('#u', 'admin');
+  await page.fill('#u', 'admin@foxugly.com');
   await page.fill('#p', 'admin12345');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await expect(page).toHaveURL(/\/admin\/dashboard/);

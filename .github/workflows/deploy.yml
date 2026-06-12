@@ -117,7 +117,7 @@ jobs:
           python manage.py migrate --noinput
           python manage.py seed_content
           DJANGO_SUPERUSER_PASSWORD=admin12345 \
-            python manage.py createsuperuser --noinput --username admin --email admin@foxugly.com || true
+            python manage.py createsuperuser --noinput --email admin@foxugly.com || true
           nohup python manage.py runserver 127.0.0.1:8001 --noreload > /tmp/backend.log 2>&1 &
 
       - name: Démarrer le frontend (ng serve + proxy)
