@@ -210,15 +210,26 @@ jobs:
           INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
         run: |
           set -euo pipefail
+          # AWS-RunShellScript runs these as ROOT, in order (§3.10 / §3.11 — "the
+          # quizonline model"): the trusted CI bundle is extracted ROOT-owned
+          # (--no-same-owner), the privileged step is installed to /usr/local/sbin
+          # and run from there BEFORE the tree is chown'd to django (so no root-run
+          # script and no root-loaded config ever comes from a django-writable
+          # file); only the app build runs as django; restart + perms normalization
+          # run as root afterwards.
           cat > ssm-params.json <<JSON
           { "commands": [
             "set -eu",
             "export AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_CONFIG_FILE=/dev/null",
             "aws s3 cp s3://$BUCKET/builds/foxugly/$BUNDLE /tmp/$BUNDLE --region $AWS_REGION",
             "mkdir -p /var/www/django_websites/foxugly",
-            "tar xzf /tmp/$BUNDLE -C /var/www/django_websites/foxugly",
+            "tar --no-same-owner -xzf /tmp/$BUNDLE -C /var/www/django_websites/foxugly",
+            "install -o root -g root -m 0755 /var/www/django_websites/foxugly/deploy/foxugly-deploy-privileged.sh /usr/local/sbin/foxugly-deploy-privileged.sh",
+            "/usr/local/sbin/foxugly-deploy-privileged.sh",
             "chown -R django:www-data /var/www/django_websites/foxugly",
-            "bash /var/www/django_websites/foxugly/deploy/deploy.sh",
+            "sudo -u django bash /var/www/django_websites/foxugly/deploy/ssm-deploy.sh",
+            "systemctl restart foxugly-gunicorn",
+            "chown -R django:www-data /var/www/django_websites/foxugly && chmod -R g-w,o-rwx /var/www/django_websites/foxugly",
             "rm -f /tmp/$BUNDLE"
           ]}
           JSON

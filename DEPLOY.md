@@ -13,7 +13,9 @@ Internet ─► nginx (443/80, partagé)
             Gunicorn foxugly  [systemd: foxugly-gunicorn.service, :8004]
             secrets : /run/foxugly/.env  [systemd: foxugly-env.service ← SSM Parameter Store]
 
-CI (push main) → build front+back → s3://foxugly-deploy/builds/foxugly/ → SSM → deploy/deploy.sh
+CI (push main) → build front+back → s3://foxugly-deploy/builds/foxugly/ → SSM (root) :
+  privileged step → /usr/local/sbin/foxugly-deploy-privileged.sh (nginx + units, pré-chown)
+  app step        → ssm-deploy.sh en `sudo -u django` (pip + migrate + collectstatic)
 ```
 
 ---
@@ -71,10 +73,14 @@ sudo ln -sf /etc/nginx/sites-available/foxugly.com /etc/nginx/sites-enabled/foxu
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-> Ensuite, **chaque push sur `main` déploie tout seul** (build CI → S3 → SSM →
-> `deploy.sh` : pip install → migrate → collectstatic → **sync nginx (sites-available
-> + symlink) + reload** → restart). Les évolutions de `deploy/nginx.conf` se déploient
-> donc seules. `seed_content` n'est **jamais** rejoué.
+> Ensuite, **chaque push sur `main` déploie tout seul** (build CI → S3 → SSM). Le
+> SSM (root) extrait le bundle (root-owned), installe la **step privilégiée** dans
+> `/usr/local/sbin` et l'exécute **avant** le `chown django` (sync nginx sites-available
+> + symlink + `nginx -t` + reload, sync units + daemon-reload) ; puis `chown django` ;
+> puis `ssm-deploy.sh` en `sudo -u django` (pip install → migrate → collectstatic) ;
+> puis `restart` + normalisation des perms en root (§3.10/§3.11 OPERATIONS.md — modèle
+> quizonline). Les évolutions de `deploy/nginx.conf` se déploient donc seules.
+> `seed_content` n'est **jamais** rejoué.
 
 ---
 
@@ -137,8 +143,13 @@ aws ssm send-command --region eu-west-1 --instance-ids i-0123… \
   --document-name AWS-RunShellScript --parameters '{"commands":[
     "B=$(aws s3 ls s3://foxugly-deploy/builds/foxugly/ --region eu-west-1 | sort | tail -1 | awk \"{print \\$4}\")",
     "aws s3 cp s3://foxugly-deploy/builds/foxugly/$B /tmp/$B --region eu-west-1",
-    "tar xzf /tmp/$B -C /var/www/django_websites/foxugly && chown -R django:www-data /var/www/django_websites/foxugly",
-    "bash /var/www/django_websites/foxugly/deploy/deploy.sh"]}'
+    "tar --no-same-owner -xzf /tmp/$B -C /var/www/django_websites/foxugly",
+    "install -o root -g root -m 0755 /var/www/django_websites/foxugly/deploy/foxugly-deploy-privileged.sh /usr/local/sbin/foxugly-deploy-privileged.sh",
+    "/usr/local/sbin/foxugly-deploy-privileged.sh",
+    "chown -R django:www-data /var/www/django_websites/foxugly",
+    "sudo -u django bash /var/www/django_websites/foxugly/deploy/ssm-deploy.sh",
+    "systemctl restart foxugly-gunicorn",
+    "chown -R django:www-data /var/www/django_websites/foxugly && chmod -R g-w,o-rwx /var/www/django_websites/foxugly"]}'
 ```
 
 ---
@@ -185,14 +196,14 @@ L'arbre `/var/www/django_websites/foxugly` est maintenu en **`django:www-data`**
 l'arbre via le groupe ; personne d'autre n'y accède. Ce schéma est appliqué et
 maintenu automatiquement :
 
-- `deploy.sh` / `bootstrap-instance.sh` posent `umask 027` puis, en fin de
-  déploiement, normalisent : `chown -R django:www-data` + `chmod -R g-w,o-rwx`
+- les scripts de déploiement posent `umask 027` ; en fin de déploiement le SSM
+  (root) normalise : `chown -R django:www-data` + `chmod -R g-w,o-rwx`
   (idempotent, ne *retire* que des droits, préserve les `+x`).
 - `foxugly-gunicorn.service` porte `UMask=0027` → les fichiers créés au runtime
   (WAL/journal SQLite, uploads media) naissent déjà en 640/750.
 
 > **Report serveur de la modif `UMask=`** : l'unit est resynchronisée
-> automatiquement par `deploy.sh` (`cmp` → `cp` → `daemon-reload` → `restart`),
+> automatiquement par `foxugly-deploy-privileged.sh` (`cmp` → `cp` → `daemon-reload`),
 > donc elle prend effet **au prochain déploiement**. Pour l'appliquer
 > immédiatement sans déploiement complet :
 > ```bash
@@ -217,7 +228,7 @@ fréquents). Accepte `/health` et `/health/`.
 - Sonde plus stricte possible (vérifier `status==ok` dans le JSON) côté monitoring.
 
 L'endpoint nginx (`location ~ ^/health/?$`) est livré dans `deploy/nginx.conf` et
-appliqué automatiquement par `deploy.sh` (sync + `nginx -t` + reload).
+appliqué automatiquement par `foxugly-deploy-privileged.sh` (sync + `nginx -t` + reload).
 
 ---
 
