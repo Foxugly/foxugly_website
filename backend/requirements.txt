@@ -4,5 +4,5 @@ django-cors-headers>=4.3
 Pillow>=10.0
 gunicorn>=22.0
 whitenoise>=6.6
-sentry-sdk[django]>=2.0
+sentry-sdk[django]>=2.66.1
 psycopg[binary]>=3.1   # requis seulement si DB_ENGINE=postgresql
