@@ -23,7 +23,7 @@
     "@primeng/themes": "^21.0.4",
     "@sentry/browser": "^10.55.0",
     "grapesjs": "^0.23.1",
-    "primeicons": "^7.0.0",
+    "primeicons": "^8.0.0",
     "primeng": "^21.1.8",
     "quill": "^2.0.3",
     "rxjs": "~7.8.0",
