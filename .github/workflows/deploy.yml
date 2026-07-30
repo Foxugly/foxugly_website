@@ -11,6 +11,11 @@ name: CI & Déploiement
 on:
   push:
     branches: [main]
+  # Sans ce declencheur, une PR n'etait verifiee par RIEN : la suite ne tournait
+  # qu'apres le merge, sur la branche qui deploie. Constate le 2026-07-30 --
+  # plusieurs PR Dependabot ouvertes sur ce depot n'avaient aucun check.
+  # Seul `test` tourne ici ; `deploy` reste garde par son `if`.
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -149,6 +154,10 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy:
     needs: [lint-backend, lint-frontend, backend-tests, frontend-tests, e2e-tests]
+    # Ne jamais deployer depuis une PR : ce job n'avait aucun garde, seulement
+    # `needs` + `environment`. Ajouter le trigger pull_request sans ce `if`
+    # aurait declenche un deploiement de production depuis une PR.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # OIDC sub is repo:Foxugly/foxugly_website:environment:production (matches the
     # foxugly-deploy role trust). Also enables GitHub environment protection rules.
