@@ -68,6 +68,26 @@ jobs:
   # ---------------------------------------------------------------------------
   backend-tests:
     runs-on: ubuntu-latest
+    # La suite tournait sur SQLite (DB_ENGINE absent -> branche sqlite dans
+    # foxugly/settings.py) alors que la production tourne sur PostgreSQL 16
+    # (DB_ENGINE=postgresql sur la box). SQLite est plus permissif et laisse
+    # passer des requetes que PostgreSQL refuse — c'est ainsi que deux endpoints
+    # casses ont vecu en production sur QuizOnline sans qu'aucun test ne les
+    # voie. On teste donc sur le moteur de production.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: foxugly
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -77,9 +97,21 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - name: Tests backend (Django)
         working-directory: backend
+        env:
+          # Convention DB_* 6 variables de la flotte (OPERATIONS.md §3.13).
+          DB_ENGINE: postgresql
+          DB_NAME: foxugly
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+        # `test` sans nom d'app : l'auto-decouverte est le garde-fou anti-derive.
+        # Une liste d'apps ecrite en dur finit toujours par oublier une app dont
+        # les tests cessent alors de tourner sans que personne ne le voie —
+        # QuizOnline y a perdu des centaines de tests.
         run: |
           pip install -r requirements.txt
-          python manage.py test content -v2
+          python manage.py test -v2
 
   # ---------------------------------------------------------------------------
   frontend-tests:
