@@ -236,12 +236,25 @@ def _sentry_release():
         return None
 
 
-if SENTRY_DSN:
+# Ce backend n'a ni STATE ni DJANGO_ENV : le seul marqueur d'environnement dont
+# il dispose est SENTRY_ENVIRONMENT, que la production pose explicitement
+# (/run/foxugly/.env : SENTRY_ENVIRONMENT=production) et qu'un poste de
+# developpement ne pose pas.
+#
+# Le defaut "production" etait donc piegeux : avec la garde `if SENTRY_DSN:`
+# seule, n'importe quel `manage.py` local portant un DSN envoyait dans le projet
+# Sentry DE PRODUCTION, etiquete « production ». Constate sur pushit le
+# 2026-07-31. On retire le defaut et on exige un marqueur explicite : une
+# variable non posee ne peut plus se faire passer pour la production.
+SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT", "").strip()
+_SENTRY_ENV_IS_PROD = SENTRY_ENVIRONMENT.upper() in {"PROD", "PRODUCTION"}
+
+if SENTRY_DSN and _SENTRY_ENV_IS_PROD:
     import sentry_sdk
 
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
+        environment=SENTRY_ENVIRONMENT,
         release=_sentry_release(),
         # Tracing désactivé par défaut (0.0) ; monter si besoin de perf monitoring.
         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
