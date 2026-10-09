@@ -5,4 +5,4 @@ Pillow>=10.0
 gunicorn>=22.0
 whitenoise>=6.12.0
 sentry-sdk[django]>=2.66.1
-psycopg[binary]>=3.1   # requis seulement si DB_ENGINE=postgresql
+psycopg[binary]>=3.3.4   # requis seulement si DB_ENGINE=postgresql
