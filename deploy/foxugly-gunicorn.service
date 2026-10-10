@@ -23,6 +23,15 @@ WorkingDirectory=/var/www/django_websites/foxugly/backend
 # pour nginx (upstream :8004) même si cet EnvironmentFile venait à manquer.
 EnvironmentFile=/run/foxugly/.env
 ExecStart=/var/www/django_websites/foxugly/backend/.venv/bin/gunicorn -c gunicorn.conf.py foxugly.wsgi:application
+# Hardening (OPERATIONS.md §3.22): no privilege escalation, private /tmp, read-only
+# system (/usr, /boot, /etc). Never ProtectSystem=strict: /var/www (media, beat schedule)
+# must stay writable.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
 Restart=always
 RestartSec=3
 KillSignal=SIGTERM
