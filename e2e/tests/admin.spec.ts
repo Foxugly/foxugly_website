@@ -17,6 +17,6 @@ test('admin : route protégée → redirection vers login', async ({ page }) => 
 test('admin : magic-link → message de confirmation (anti-énumération)', async ({ page }) => {
   await page.goto('/admin/login');
   await page.fill('#me', 'admin@foxugly.com');
-  await page.getByRole('button', { name: /Recevoir un lien magique/ }).click();
+  await page.getByRole('button', { name: /Recevoir un lien de connexion/ }).click();
   await expect(page.getByText(/lien de connexion vient d'être envoyé/)).toBeVisible();
 });
