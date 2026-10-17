@@ -14,10 +14,7 @@ import { AuthService } from '../../core/auth.service';
           <img src="assets/logo.svg" alt="foxugly" />
           <span><span class="fox">fox</span><span class="ugly">ugly</span></span>
         </div>
-        <h2 style="text-align:center; margin-bottom:.3rem;">Espace admin</h2>
-        <p style="text-align:center; color:var(--muted); margin-bottom:1.6rem; font-size:.92rem;">
-          Connecte-toi pour gérer le contenu du site.
-        </p>
+        <h2 style="text-align:center; margin-bottom:1.6rem;">Espace admin</h2>
 
         <div class="field">
           <label for="u">Email</label>
