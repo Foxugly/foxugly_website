@@ -24,5 +24,5 @@ import { ContentService } from '../../core/content.service';
 export class Footer {
   private content = inject(ContentService);
   protected settings$ = this.content.settings();
-  protected year = 2026;
+  protected year = new Date().getFullYear();
 }
