@@ -93,9 +93,10 @@ class TestimonialSerializer(serializers.ModelSerializer):
 class ContactMessageSerializer(serializers.ModelSerializer):
     # Force une vraie validation d'email et des champs requis non vides.
     email = serializers.EmailField()
-    name = serializers.CharField(max_length=200)
-    message = serializers.CharField()
-    subject = serializers.CharField(required=False, allow_blank=True)
+    # Bornes alignées sur le modèle (sinon DataError → 500 sous PostgreSQL).
+    name = serializers.CharField(max_length=120)
+    message = serializers.CharField(max_length=5000)
+    subject = serializers.CharField(required=False, allow_blank=True, max_length=200)
 
     class Meta:
         model = ContactMessage

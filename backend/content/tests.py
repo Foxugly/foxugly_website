@@ -1,6 +1,5 @@
 """Tests de l'API content : lectures publiques, permissions staff, auth, contact."""
 from django.contrib.auth import get_user_model
-from django.core import signing
 from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -41,11 +40,12 @@ class PublicReadTests(BaseAPITestCase):
         self.assertEqual(types, ["hero"])  # le bloc caché est exclu
 
     def test_blocks_filter_by_page_not_paginated(self):
+        self.client.force_authenticate(self.staff)
         r = self.client.get("/api/blocks/?page=accueil")
         self.assertEqual(r.status_code, 200)
         # pagination désactivée → liste brute (pas d'enveloppe {results})
         self.assertIsInstance(r.data, list)
-        self.assertEqual(len(r.data), 2)
+        self.assertEqual(len(r.data), 2)  # le staff voit aussi le bloc caché
 
     def test_collections_and_settings_public(self):
         for path in ("/api/news/", "/api/projects/", "/api/partners/", "/api/testimonials/", "/api/settings/"):
@@ -167,7 +167,9 @@ class AuthTests(BaseAPITestCase):
 
 class MagicLinkTests(BaseAPITestCase):
     def _token(self, user):
-        return signing.dumps({"uid": user.pk, "ll": str(user.last_login)}, salt="foxugly.magic-login")
+        from .views import make_magic_token
+
+        return make_magic_token(user)
 
     def test_request_always_200(self):
         for email in (self.staff.email or "staff@x.com", "unknown@x.com"):
@@ -271,3 +273,108 @@ class ClientIpThrottleTests(BaseAPITestCase):
         ]
         self.assertEqual(codes[:5], [201] * 5)
         self.assertEqual(codes[5], status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class BlockVisibilityTests(BaseAPITestCase):
+    """Audit 2026-10-18 I2 : /api/blocks/ ne doit pas exposer les brouillons au public."""
+
+    def setUp(self):
+        super().setUp()
+        self.draft = Page.objects.create(slug="draft", title="Brouillon", order=9, is_published=False)
+        self.draft_block = Block.objects.create(page=self.draft, block_type=Block.Type.HERO, order=1,
+                                                content={"title": "Secret"})
+
+    def test_anonymous_list_hides_hidden_and_unpublished(self):
+        ids = {b["id"] for b in self.client.get("/api/blocks/").data}
+        self.assertIn(self.hero.pk, ids)
+        self.assertNotIn(self.hidden.pk, ids)
+        self.assertNotIn(self.draft_block.pk, ids)
+
+    def test_anonymous_page_filter_on_draft_is_empty(self):
+        self.assertEqual(self.client.get("/api/blocks/?page=draft").data, [])
+
+    def test_anonymous_detail_of_hidden_or_draft_is_404(self):
+        for pk in (self.hidden.pk, self.draft_block.pk):
+            self.assertEqual(self.client.get(f"/api/blocks/{pk}/").status_code, 404, pk)
+
+    def test_non_staff_user_same_as_anonymous(self):
+        self.client.force_authenticate(self.plain)
+        self.assertEqual(self.client.get(f"/api/blocks/{self.hidden.pk}/").status_code, 404)
+
+    def test_staff_sees_everything(self):
+        self.client.force_authenticate(self.staff)
+        ids = {b["id"] for b in self.client.get("/api/blocks/").data}
+        self.assertTrue({self.hero.pk, self.hidden.pk, self.draft_block.pk} <= ids)
+
+
+class LoginThrottleTests(BaseAPITestCase):
+    """Audit I3 : la connexion par mot de passe est limitée en débit."""
+
+    def test_password_login_is_throttled(self):
+        bad = {"email": "staff@x.com", "password": "nope"}
+        codes = [self.client.post("/api/auth/login/", bad, format="json").status_code for _ in range(6)]
+        self.assertEqual(codes[:5], [400] * 5)
+        self.assertEqual(codes[5], status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class MagicLinkUrlTests(BaseAPITestCase):
+    """Audit I4/M5 : lien servi par le SPA, jeton jamais envoyé au serveur ni journalisé."""
+
+    def _request_link(self):
+        from unittest import mock
+
+        with (
+            mock.patch("content.views.graph_configured", return_value=True),
+            mock.patch("content.views.send_login_link") as send,
+        ):
+            self.client.post("/api/auth/magic-link/", {"email": "staff@x.com"}, format="json")
+        send.assert_called_once()
+        return send.call_args.args[1]
+
+    def test_token_travels_in_fragment(self):
+        link = self._request_link()
+        self.assertIn("/admin/magic#token=", link)
+        self.assertNotIn("?", link)
+
+    def test_token_and_email_not_logged_without_graph(self):
+        with self.assertLogs("content.views", level="INFO") as logs:
+            self.client.post("/api/auth/magic-link/", {"email": "staff@x.com"}, format="json")
+        joined = " | ".join(logs.output)
+        self.assertNotIn("token", joined)
+        self.assertNotIn("staff@x.com", joined)
+
+    def test_django_admin_moved_off_spa_prefix(self):
+        # /admin/* appartient au SPA (back-office Angular) ; l'admin Django vit ailleurs.
+        self.assertEqual(self.client.get("/admin/").status_code, 404)
+        from django.urls import reverse
+
+        self.assertEqual(reverse("admin:index"), "/django-admin/")
+
+    def test_magic_token_dies_on_password_change(self):
+        from .views import make_magic_token
+
+        token = make_magic_token(self.staff)
+        self.staff.set_password("new-pw")
+        self.staff.save()
+        r = self.client.post("/api/auth/magic-login/", {"token": token}, format="json")
+        self.assertEqual(r.status_code, 400)
+
+
+class HardeningTests(BaseAPITestCase):
+    def test_contact_bounds_match_model(self):
+        base = {"email": "jean@x.com", "message": "Bonjour"}
+        too_long = [
+            {**base, "name": "n" * 121},
+            {**base, "name": "Jean", "subject": "s" * 201},
+            {**base, "name": "Jean", "message": "m" * 5001},
+        ]
+        for payload in too_long:
+            self.assertEqual(self.client.post("/api/contact/", payload, format="json").status_code, 400)
+        self.assertEqual(ContactMessage.objects.count(), 0)
+
+    def test_browsable_api_disabled_outside_debug(self):
+        r = self.client.get("/api/pages/", HTTP_ACCEPT="text/html,*/*;q=0.8")
+        self.assertEqual(r["Content-Type"], "application/json")
+
+    def test_api_auth_not_routed_outside_debug(self):
+        self.assertEqual(self.client.get("/api-auth/login/").status_code, 404)

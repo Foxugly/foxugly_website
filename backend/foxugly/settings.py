@@ -19,20 +19,11 @@ if not SECRET_KEY:
     if DEBUG or _RUNNING_TESTS:
         SECRET_KEY = "dev-insecure-change-me-in-production"
     else:
-        # Production sans clé explicite : on en génère une aléatoire (jamais
-        # prévisible) plutôt que de tourner sur une valeur connue. Les sessions
-        # sont invalidées à chaque redémarrage tant que SECRET_KEY n'est
-        # pas défini → à corriger en priorité (voir warning ci-dessous).
-        import secrets
-        import warnings
+        # Fail-closed (comme le reste de la flotte) : en production, une clé
+        # absente est une erreur de configuration, pas un warning.
+        from django.core.exceptions import ImproperlyConfigured
 
-        SECRET_KEY = secrets.token_urlsafe(64)
-        warnings.warn(
-            "SECRET_KEY non défini en production : clé aléatoire générée. "
-            "Définissez SECRET_KEY pour des sessions stables.",
-            RuntimeWarning,
-            stacklevel=2,
-        )
+        raise ImproperlyConfigured("SECRET_KEY doit être défini hors DEBUG.")
 
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
@@ -190,15 +181,25 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "contact": os.environ.get("THROTTLE_CONTACT", "5/min"),
         "magic_link": os.environ.get("THROTTLE_MAGIC_LINK", "5/min"),
+        "login": os.environ.get("THROTTLE_LOGIN", "5/min"),
     },
+    # API navigable (HTML) seulement en dev : en prod, JSON seul.
+    "DEFAULT_RENDERER_CLASSES": (
+        ["rest_framework.renderers.JSONRenderer", "rest_framework.renderers.BrowsableAPIRenderer"]
+        if DEBUG
+        else ["rest_framework.renderers.JSONRenderer"]
+    ),
 }
 
 # --- CORS (frontend Angular) ------------------------------------------------
 # Origines autorisées à appeler l'API. Ajuster selon ton port Angular (4200).
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ORIGINS",
-    "http://localhost:4200,http://127.0.0.1:4200",
-).split(",")
+# Hors DEBUG, aucune origine par défaut (le site est same-origin en prod).
+CORS_ALLOWED_ORIGINS = [
+    o for o in os.environ.get(
+        "CORS_ORIGINS",
+        "http://localhost:4200,http://127.0.0.1:4200" if DEBUG else "",
+    ).split(",") if o
+]
 CORS_ALLOW_CREDENTIALS = True
 
 # Origines de confiance pour CSRF (Django 4+ vérifie l'en-tête Origin sur les
@@ -216,9 +217,12 @@ if os.environ.get("SECURE", "False") == "True":
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = os.environ.get("SSL_REDIRECT", "True") == "True"
+    # HSTS est posé par nginx (deploy/nginx.conf, sur toutes les réponses). Côté
+    # Django : désactivé par défaut pour ne pas doubler l'en-tête ; jamais
+    # includeSubDomains/preload sans décision explicite (opt-in par env).
     SECURE_HSTS_SECONDS = int(os.environ.get("HSTS_SECONDS", "0"))
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get("HSTS_INCLUDE_SUBDOMAINS", "False") == "True"
+    SECURE_HSTS_PRELOAD = os.environ.get("HSTS_PRELOAD", "False") == "True"
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # --- Sentry (monitoring d'erreurs) ------------------------------------------
