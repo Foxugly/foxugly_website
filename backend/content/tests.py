@@ -237,3 +237,37 @@ class ThrottleTests(BaseAPITestCase):
             )
         r = self.client.post("/api/auth/magic-link/", {"email": "x@x.com"}, format="json")
         self.assertEqual(r.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class ClientIpThrottleTests(BaseAPITestCase):
+    """Derrière nginx (seul proxy), seule la dernière valeur de X-Forwarded-For est fiable."""
+
+    def test_un_seul_proxy_est_declare(self):
+        from rest_framework.settings import api_settings
+
+        self.assertEqual(api_settings.NUM_PROXIES, 1)
+
+    def test_xff_forge_ne_change_pas_l_identite(self):
+        from rest_framework.test import APIRequestFactory
+        from rest_framework.throttling import ScopedRateThrottle
+
+        def ident(xff):
+            req = APIRequestFactory().post("/api/contact/", HTTP_X_FORWARDED_FOR=xff,
+                                           REMOTE_ADDR="127.0.0.1")
+            return ScopedRateThrottle().get_ident(req)
+
+        self.assertEqual(ident("203.0.113.7"), "203.0.113.7")
+        self.assertEqual(ident("1.2.3.4, 203.0.113.7"), "203.0.113.7")
+        self.assertEqual(ident("5.6.7.8, 9.9.9.9, 203.0.113.7"), "203.0.113.7")
+
+    def test_xff_forge_ne_contourne_pas_le_throttle_contact(self):
+        # Ce que gunicorn reçoit quand le client forge XFF et que nginx ajoute
+        # l'adresse réelle : la 6e requête reste refusée malgré un XFF différent.
+        payload = {"name": "Jean", "email": "jean@x.com", "message": "Bonjour"}
+        codes = [
+            self.client.post("/api/contact/", payload, format="json",
+                             HTTP_X_FORWARDED_FOR=f"10.0.0.{i}, 203.0.113.7").status_code
+            for i in range(6)
+        ]
+        self.assertEqual(codes[:5], [201] * 5)
+        self.assertEqual(codes[5], status.HTTP_429_TOO_MANY_REQUESTS)
