@@ -182,6 +182,11 @@ REST_FRAMEWORK = {
     # NB : le cache par défaut (LocMemCache) est par-process ; avec plusieurs workers
     # gunicorn la limite effective est multipliée par le nombre de workers. Pour une
     # limite stricte et partagée, configurer un cache commun (Redis ou DatabaseCache).
+    # nginx est le seul proxy et AJOUTE l'adresse qu'il voit en fin de
+    # X-Forwarded-For ($proxy_add_x_forwarded_for). Sans NUM_PROXIES, DRF prenait
+    # l'en-tête entier (écrit par le client) comme identité de throttle : un XFF
+    # forgé à chaque requête contournait les limites contact / magic-link.
+    "NUM_PROXIES": 1,
     "DEFAULT_THROTTLE_RATES": {
         "contact": os.environ.get("THROTTLE_CONTACT", "5/min"),
         "magic_link": os.environ.get("THROTTLE_MAGIC_LINK", "5/min"),
