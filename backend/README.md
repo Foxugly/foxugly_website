@@ -34,7 +34,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-- Admin Django : http://127.0.0.1:8000/admin/
+- Admin Django : http://127.0.0.1:8001/django-admin/ (`/admin/` = back-office Angular)
 - API : http://127.0.0.1:8000/api/
 
 ## Principaux points d'API

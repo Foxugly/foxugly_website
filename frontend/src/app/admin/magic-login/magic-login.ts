@@ -36,7 +36,10 @@ export class MagicLogin {
   protected error = signal('');
 
   constructor() {
-    const token = this.route.snapshot.queryParamMap.get('token') ?? '';
+    // Le jeton arrive dans le FRAGMENT (#token=…) : jamais envoyé au serveur ni
+    // journalisé par nginx. On l'efface aussitôt de l'URL (historique, Sentry).
+    const token = new URLSearchParams(this.route.snapshot.fragment ?? '').get('token') ?? '';
+    window.history.replaceState(window.history.state, '', window.location.pathname);
     if (!token) {
       this.error.set('Aucun token fourni.');
       return;
