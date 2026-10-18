@@ -95,7 +95,7 @@ Toutes les réponses de liste sont paginées DRF : `{count, next, previous, resu
 | `GET /api/testimonials/` | `{id,quote,author,role,initials,order}` |
 | `GET /api/settings/` | `{brand_name,tagline,contact_email,linkedin_url,footer_text}` |
 
-Lecture publique. **Écriture** (admin) : session DRF — login via `POST /api-auth/login/`
+Lecture publique. **Écriture** (admin) : session DRF — login via `POST /api/auth/login/`
 (ou endpoint de session), cookie de session + CSRF token (`X-CSRFToken`) sur les requêtes
 d'écriture. `withCredentials: true` côté Angular.
 

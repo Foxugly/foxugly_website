@@ -7,7 +7,7 @@ télécharger et déployer. **Aucune compilation sur le serveur.**
 ```
 Internet ─► nginx (443/80, partagé)
               ├─ foxugly.com → frontend Angular (/var/www/django_websites/foxugly/frontend/dist/frontend/browser)
-              │                + /api /api-auth /admin /static → Gunicorn 127.0.0.1:8004
+              │                + /api /django-admin /static → Gunicorn 127.0.0.1:8004
               │                + /media → /var/www/django_websites/foxugly/backend/media
               └─ quizonline.…  (Gunicorn :8000)
             Gunicorn foxugly  [systemd: foxugly-gunicorn.service, :8004]

@@ -6,7 +6,9 @@ from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.core import signing
 from django.db import connection, transaction
 from django.db.models import Prefetch
+from django.utils import timezone
 from django.utils.cache import patch_cache_control, patch_vary_headers
+from django.utils.crypto import constant_time_compare, salted_hmac
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status, viewsets
@@ -138,6 +140,10 @@ class BlockViewSet(PublicReadCacheMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        # Le public lit les pages via /api/pages/<slug>/ ; ici il ne voit, comme
+        # là, que les blocs visibles des pages publiées (brouillons = staff seul).
+        if not self.request.user.is_staff:
+            qs = qs.filter(is_visible=True, page__is_published=True)
         page_slug = self.request.query_params.get("page")
         if page_slug:
             qs = qs.filter(page__slug=page_slug)
@@ -249,6 +255,9 @@ class LoginView(APIView):
     """Connexion par session DRF : POST {email, password}."""
 
     permission_classes = [AllowAny]
+    # Anti brute-force : quelques essais par minute et par IP (vue par nginx).
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
 
     def post(self, request):
         # USERNAME_FIELD = "email" → ModelBackend authentifie sur l'email. On lit
@@ -282,6 +291,19 @@ MAGIC_SALT = "foxugly.magic-login"
 MAGIC_MAX_AGE = 900  # 15 minutes
 
 
+def _password_fingerprint(user):
+    """Empreinte du hash de mot de passe : un changement de mot de passe tue les liens émis."""
+    return salted_hmac(MAGIC_SALT, user.password or "").hexdigest()[:16]
+
+
+def make_magic_token(user):
+    """Jeton signé : uid + last_login (usage unique) + empreinte du mot de passe."""
+    return signing.dumps(
+        {"uid": user.pk, "ll": str(user.last_login), "pw": _password_fingerprint(user)},
+        salt=MAGIC_SALT,
+    )
+
+
 class MagicLinkRequestView(APIView):
     """Demande un lien de connexion par email (staff uniquement)."""
 
@@ -298,16 +320,19 @@ class MagicLinkRequestView(APIView):
             .first()
         )
         if user:
-            token = signing.dumps({"uid": user.pk, "ll": str(user.last_login)}, salt=MAGIC_SALT)
+            token = make_magic_token(user)
             base = os.environ.get("FRONTEND_BASE_URL", "https://www.foxugly.com").rstrip("/")
-            link = f"{base}/admin/magic?token={token}"
+            # Jeton dans le FRAGMENT (#) : jamais envoyé au serveur, donc absent des
+            # logs nginx/gunicorn ; le SPA le lit puis le POSTe à /api/auth/magic-login/.
+            link = f"{base}/admin/magic#token={token}"
+            # Jamais le lien ni l'e-mail dans les logs : seulement l'id du compte.
             try:
                 if graph_configured():
                     send_login_link(user.email, link)
                 else:
-                    logger.warning("Magic link (Graph non configuré) pour %s : %s", email, link)
+                    logger.warning("Magic link non envoyé (Graph non configuré), user #%s", user.pk)
             except Exception:  # noqa: BLE001
-                logger.exception("Échec d'envoi du magic link à %s", email)
+                logger.exception("Échec d'envoi du magic link, user #%s", user.pk)
         # Réponse identique que le compte existe ou non (anti-énumération).
         return Response({"detail": "Si un compte staff correspond, un lien a été envoyé."})
 
@@ -331,9 +356,23 @@ class MagicLinkLoginView(APIView):
             .first()
         )
         # Usage unique : le token encode le last_login d'alors ; la connexion le met
-        # à jour, donc un token déjà utilisé ne correspond plus.
-        if not user or str(user.last_login) != data.get("ll"):
-            return Response({"detail": "Lien déjà utilisé ou invalide."}, status=status.HTTP_400_BAD_REQUEST)
+        # à jour, donc un token déjà utilisé ne correspond plus. Il meurt aussi au
+        # changement de mot de passe. La consommation est atomique (update == 1) :
+        # deux requêtes concurrentes avec le même jeton ne passent pas toutes les deux.
+        invalid = Response({"detail": "Lien déjà utilisé ou invalide."}, status=status.HTTP_400_BAD_REQUEST)
+        if (
+            not user
+            or str(user.last_login) != data.get("ll")
+            or not constant_time_compare(_password_fingerprint(user), data.get("pw") or "")
+        ):
+            return invalid
+        consumed = (
+            get_user_model().objects
+            .filter(pk=user.pk, last_login=user.last_login)
+            .update(last_login=timezone.now())
+        )
+        if consumed != 1:
+            return invalid
 
         login(request, user)
         return Response(_user_payload(user))
