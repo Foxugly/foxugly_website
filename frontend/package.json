@@ -22,7 +22,7 @@
     "@angular/router": "^21.2.25",
     "@primeng/themes": "^21.0.4",
     "@sentry/browser": "^10.76.2",
-    "grapesjs": "^0.23.6",
+    "grapesjs": "^0.23.8",
     "primeicons": "^7.0.0",
     "primeng": "^21.1.10",
     "quill": "^2.0.3",
@@ -30,8 +30,8 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/build": "^21.2.26",
-    "@angular/cli": "^21.2.26",
+    "@angular/build": "^21.2.27",
+    "@angular/cli": "^21.2.27",
     "@angular/compiler-cli": "^21.2.25",
     "@eslint/js": "^10.0.1",
     "angular-eslint": "21.4.0",
@@ -40,6 +40,6 @@
     "prettier": "^3.9.10",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.71.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }
