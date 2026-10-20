@@ -4,15 +4,15 @@
 #
 # §3.10 / §3.11 (OPERATIONS.md, "the quizonline model"): root must never execute
 # a script that lives in the django-writable tree, nor install a root-loaded
-# artifact (systemd unit / nginx vhost) from a django-writable file. So the SSM
-# pipeline:
-#   1. extracts the trusted CI bundle as ROOT-owned (`tar --no-same-owner`),
-#   2. installs THIS script to /usr/local/sbin (root:root 0755) from that bundle,
-#   3. runs it from there — BEFORE the tree is chown'd to django.
-# At that point the unit/nginx sources under deploy/ are still root-owned (just
-# extracted), so installing them as root is safe. The app build (pip/migrate/
-# collectstatic) and the final perms normalization run afterwards as django; the
-# gunicorn restart runs as root in the pipeline after the build.
+# artifact (systemd unit / nginx vhost) from a django-writable file, nor write
+# into a django-owned directory. So the SSM pipeline:
+#   1. has DJANGO extract the trusted CI bundle into its own tree (root only
+#      downloads it into a private mktemp -d and hands it over on stdin),
+#   2. installs THIS script to /usr/local/sbin (root:root 0755) from root's mirror,
+#   3. runs it from there.
+# The app build (pip/migrate/collectstatic) runs afterwards as django; the
+# gunicorn restart runs as root in the pipeline after the build; the final perms
+# normalization is `chown -R -h` (root, follows no link) + chmod as django.
 #
 # Behaviour is otherwise identical to the previous (in-tree, root-run) deploy.sh.
 #
