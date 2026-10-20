@@ -305,6 +305,12 @@ jobs:
           # script and no root-loaded config ever comes from a django-writable
           # file); only the app build runs as django; restart + perms normalization
           # run as root afterwards.
+          # Le script privilégié et tout ce qu'il installe (vhost, units) sont lus
+          # dans le MIROIR NU DE ROOT (/var/lib/fleet-deploy, root:root 700),
+          # alimenté depuis GitHub au SHA poussé — jamais dans l'arbre extrait :
+          # ses répertoires existants restent à django, qui pourrait y substituer
+          # un fichier entre le `tar` et l'`install` (course → exécution en root).
+          M=/var/lib/fleet-deploy/foxugly_website.git
           cat > ssm-params.json <<JSON
           { "commands": [
             "set -eu",
@@ -312,8 +318,13 @@ jobs:
             "aws s3 cp s3://$BUCKET/builds/foxugly/$BUNDLE /tmp/$BUNDLE --region $AWS_REGION",
             "mkdir -p /var/www/django_websites/foxugly",
             "tar --no-same-owner -xzf /tmp/$BUNDLE -C /var/www/django_websites/foxugly",
-            "install -o root -g root -m 0755 /var/www/django_websites/foxugly/deploy/foxugly-deploy-privileged.sh /usr/local/sbin/foxugly-deploy-privileged.sh",
-            "/usr/local/sbin/foxugly-deploy-privileged.sh",
+            "install -d -m 700 -o root -g root /var/lib/fleet-deploy",
+            "[ -d $M ] || git init --quiet --bare $M",
+            "git --git-dir=$M fetch --quiet --depth=1 https://github.com/Foxugly/foxugly_website.git $GITHUB_SHA",
+            "git --git-dir=$M cat-file -e $GITHUB_SHA^{commit}",
+            "git --git-dir=$M show $GITHUB_SHA:deploy/foxugly-deploy-privileged.sh > /usr/local/sbin/foxugly-deploy-privileged.sh",
+            "chown root:root /usr/local/sbin/foxugly-deploy-privileged.sh && chmod 0755 /usr/local/sbin/foxugly-deploy-privileged.sh",
+            "/usr/local/sbin/foxugly-deploy-privileged.sh $M $GITHUB_SHA",
             "chown -R django:www-data /var/www/django_websites/foxugly",
             "sudo -u django bash /var/www/django_websites/foxugly/deploy/ssm-deploy.sh",
             "systemctl restart foxugly-gunicorn",
