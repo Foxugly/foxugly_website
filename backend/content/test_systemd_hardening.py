@@ -16,7 +16,7 @@ def _repo_root():
 
 
 UNITS_DIR = _repo_root() / "deploy"
-UNITS = ['foxugly-gunicorn']
+UNITS = ['foxugly-gunicorn', 'foxugly-purge-contact']
 SOLO_CELERY = []
 DIRECTIVES = ['NoNewPrivileges=yes', 'PrivateTmp=yes', 'ProtectSystem=full', 'ProtectKernelTunables=yes', 'ProtectControlGroups=yes', 'RestrictSUIDSGID=yes']
 

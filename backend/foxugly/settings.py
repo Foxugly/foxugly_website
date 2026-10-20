@@ -157,6 +157,23 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Django REST Framework --------------------------------------------------
+# Cache partagé (OPERATIONS.md §3.4) : sans lui, les throttles DRF vivent dans un LocMemCache
+# par worker gunicorn (limite effective x GUNICORN_WORKERS). En prod, CACHE_URL pointe sur un
+# db Redis dédié (redis://127.0.0.1:6379/11) ; sans variable, repli LocMem (dev / tests).
+CACHE_URL = os.environ.get("CACHE_URL", "").strip()
+if CACHE_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": CACHE_URL,
+            "KEY_PREFIX": "foxugly",
+        }
+    }
+
+# RGPD : durée de conservation des messages de contact (jours), appliquée par la commande
+# `purge_contact_messages` (timer systemd foxugly-purge-contact.timer).
+CONTACT_RETENTION_DAYS = int(os.environ.get("CONTACT_RETENTION_DAYS", "365"))
+
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         # Lecture publique, écriture réservée au staff (admin connecté).
