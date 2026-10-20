@@ -23,8 +23,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-prod
-  cancel-in-progress: false
+  # Les PR ont chacune leur groupe : partager `deploy-prod` faisait annuler les
+  # runs de PR en attente (un seul « pending » par groupe), donc les checks requis
+  # ne passaient jamais sur des PR Dependabot ouvertes ensemble (2026-10-20).
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'deploy-prod' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION || 'eu-west-1' }}
