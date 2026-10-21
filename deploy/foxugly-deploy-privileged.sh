@@ -51,7 +51,8 @@ fi
 
 # --- systemd units (idempotent: daemon-reload only on a real change) -----------
 units_changed=0
-for unit in foxugly-env-fetch.service foxugly-gunicorn.service \n            foxugly-purge-contact.service foxugly-purge-contact.timer; do
+for unit in foxugly-env-fetch.service foxugly-gunicorn.service \
+            foxugly-purge-contact.service foxugly-purge-contact.timer; do
     new_unit=$(mktemp)
     blob "deploy/$unit" > "$new_unit"
     if ! cmp -s "$new_unit" "/etc/systemd/system/$unit"; then
