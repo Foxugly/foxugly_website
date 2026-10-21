@@ -51,7 +51,7 @@ fi
 
 # --- systemd units (idempotent: daemon-reload only on a real change) -----------
 units_changed=0
-for unit in foxugly-env-fetch.service foxugly-gunicorn.service; do
+for unit in foxugly-env-fetch.service foxugly-gunicorn.service \n            foxugly-purge-contact.service foxugly-purge-contact.timer; do
     new_unit=$(mktemp)
     blob "deploy/$unit" > "$new_unit"
     if ! cmp -s "$new_unit" "/etc/systemd/system/$unit"; then
@@ -62,5 +62,6 @@ for unit in foxugly-env-fetch.service foxugly-gunicorn.service; do
 done
 [ "$units_changed" = 1 ] && systemctl daemon-reload
 systemctl enable foxugly-gunicorn        # persistance au boot (idempotent)
+systemctl enable --now foxugly-purge-contact.timer   # purge RGPD des messages de contact (idempotent)
 
 echo "✓ foxugly privileged step done (nginx vhost + systemd units)."

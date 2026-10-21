@@ -1,0 +1,22 @@
+# Purge RGPD des messages de contact (rétention CONTACT_RETENTION_DAYS, défaut 365 j).
+# Déclenché par foxugly-purge-contact.timer ; installé par root (foxugly-deploy-privileged.sh).
+[Unit]
+Description=foxugly purge des messages de contact (RGPD)
+After=network.target foxugly-env-fetch.service
+Wants=foxugly-env-fetch.service
+
+[Service]
+Type=oneshot
+User=django
+Group=www-data
+UMask=0027
+WorkingDirectory=/var/www/django_websites/foxugly/backend
+EnvironmentFile=/run/foxugly/.env
+ExecStart=/var/www/django_websites/foxugly/backend/.venv/bin/python manage.py purge_contact_messages
+# Hardening (OPERATIONS.md §3.22)
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes

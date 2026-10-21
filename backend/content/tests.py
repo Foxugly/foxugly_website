@@ -378,3 +378,18 @@ class HardeningTests(BaseAPITestCase):
 
     def test_api_auth_not_routed_outside_debug(self):
         self.assertEqual(self.client.get("/api-auth/login/").status_code, 404)
+
+
+class PurgeContactMessagesTests(BaseAPITestCase):
+    def test_purge_removes_only_expired_messages(self):
+        from datetime import timedelta
+
+        from django.core.management import call_command
+        from django.utils import timezone
+
+        old = ContactMessage.objects.create(name="a", email="a@x.be", message="vieux")
+        recent = ContactMessage.objects.create(name="b", email="b@x.be", message="récent")
+        ContactMessage.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=400))
+        call_command("purge_contact_messages", days=365)
+        self.assertFalse(ContactMessage.objects.filter(pk=old.pk).exists())
+        self.assertTrue(ContactMessage.objects.filter(pk=recent.pk).exists())

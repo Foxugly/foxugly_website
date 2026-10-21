@@ -10,6 +10,7 @@ import { Block, BlockType, PageDetail } from '../../core/models';
 import { BlockForm, BlockEdit } from '../blocks/block-form';
 import { BLOCK_TYPE_LABELS, emptyContent } from '../blocks/block-schema';
 import { renderBlockHtml } from '../blocks/block-preview';
+import { setSafeHtml } from '../blocks/safe-html';
 
 /**
  * Éditeur visuel GrapesJS « par-dessus le modèle de blocs ».
@@ -165,7 +166,7 @@ export class VisualEditor implements AfterViewInit, OnDestroy {
       },
       view: {
         onRender() {
-          (this as any).el.innerHTML = (this as any).model.get('previewHtml') || '';
+          setSafeHtml((this as any).el, (this as any).model.get('previewHtml') || '');
         },
       },
     });
@@ -284,7 +285,7 @@ export class VisualEditor implements AfterViewInit, OnDestroy {
           cmp.set('blockData', updated);
           cmp.set('previewHtml', renderBlockHtml(updated));
           const el = cmp.getEl();
-          if (el) el.innerHTML = renderBlockHtml(updated);
+          if (el) setSafeHtml(el, renderBlockHtml(updated));
         });
       }
       this.selected.set(null);

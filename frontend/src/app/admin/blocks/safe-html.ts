@@ -1,0 +1,24 @@
+/**
+ * Remplace le contenu de `target` par du HTML analysé dans un document inerte (DOMParser :
+ * aucun script exécuté), dépouillé des éléments actifs, des attributs `on*` et des URL
+ * `javascript:`. Remplace l'affectation directe de `innerHTML` (audit foxugly M11).
+ */
+const SAFE_SCHEMES = ['http', 'https', 'mailto', 'tel'];
+const FORBIDDEN = 'script,iframe,object,embed,link,meta,base,form';
+
+export function setSafeHtml(target: Element, html: string): void {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.body.querySelectorAll(FORBIDDEN).forEach(n => n.remove());
+  doc.body.querySelectorAll('*').forEach(el => {
+    for (const attr of Array.from(el.attributes)) {
+      const name = attr.name.toLowerCase();
+      const compact = Array.from(attr.value).filter(ch => ch.charCodeAt(0) > 32).join('');
+      const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(compact)?.[1]?.toLowerCase();
+      const urlAttr = ['href', 'src', 'xlink:href', 'action', 'formaction'].includes(name);
+      if (name.startsWith('on') || (urlAttr && scheme && !SAFE_SCHEMES.includes(scheme))) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+  target.replaceChildren(...Array.from(doc.body.childNodes).map(n => target.ownerDocument.importNode(n, true)));
+}
