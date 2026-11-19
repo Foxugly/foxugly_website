@@ -29,7 +29,9 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(","
 
 # --- Applications -----------------------------------------------------------
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    # Admin Django derrière une 2FA TOTP : remplace "django.contrib.admin" (même label
+    # « admin ») ; admin.site devient Admin2FASite (voir CLAUDE.md « Admin 2FA »).
+    "admin_2fa.apps.OTPAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -38,7 +40,11 @@ INSTALLED_APPS = [
     # Tiers
     "rest_framework",
     "corsheaders",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
     # Local
+    "admin_2fa",
     "accounts",
     "content",
 ]
@@ -56,6 +62,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Juste après l'auth : expose request.user.is_verified() (2FA de l'admin Django).
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -155,6 +163,12 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --- 2FA de l'admin Django (django-otp, app admin_2fa) ---------------------------
+# Libellé affiché dans l'appli d'authentification ; throttling explicite (0 = check E004).
+OTP_TOTP_ISSUER = "foxugly admin (foxugly.com)"
+OTP_TOTP_THROTTLE_FACTOR = 1
+OTP_STATIC_THROTTLE_FACTOR = 1
 
 # --- Django REST Framework --------------------------------------------------
 # Cache partagé (OPERATIONS.md §3.4) : sans lui, les throttles DRF vivent dans un LocMemCache
