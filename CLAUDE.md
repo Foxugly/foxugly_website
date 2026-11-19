@@ -62,6 +62,40 @@ Types de blocs (`block_type`), un composant Angular par type :
 `contact_form`, `contact_info`.
 La forme de `content` pour chaque type est visible via `seed_content.py` et l'API.
 
+## Admin 2FA (admin Django, `/django-admin/`)
+
+L'admin **Django** (`/django-admin/`, pas le back-office Angular `/admin/*`) exige un second
+facteur TOTP pour **tout** compte staff (django-otp 1.7.5 + qrcode 8.2, app `backend/admin_2fa/`,
+copie de l'implémentation de référence de la flotte, Poker_server). L'API (session DRF, magic link)
+et donc le back-office Angular ne changent pas (`content/test_admin_2fa_api_unchanged.py`).
+
+- **Câblage** : `"admin_2fa.apps.OTPAdminConfig"` *remplace* `"django.contrib.admin"` (`admin.site`
+  devient un `Admin2FASite`, dont `has_permission` exige aussi `user.is_verified()`) ; plus
+  `django_otp`, `otp_totp`, `otp_static`, `admin_2fa` dans INSTALLED_APPS et
+  `django_otp.middleware.OTPMiddleware` juste après `AuthenticationMiddleware`. `OTP_TOTP_ISSUER` =
+  libellé dans l'appli d'authentification. Une pièce manquante fait échouer `manage.py check`
+  (`admin_2fa.E001-E004`). Un `AdminSite` personnalisé doit hériter d'`Admin2FASite`.
+- **Parcours** : mot de passe sur `/django-admin/login/` → `/django-admin/2fa/setup/` (1re fois : QR +
+  clé, un code pour confirmer, 10 codes de secours affichés **une seule fois**) ou
+  `/django-admin/2fa/verify/` (code TOTP ou code de secours).
+- **Brute force** : django-otp ralentit chaque appareil (1 s, 2 s, 4 s… après chaque mauvais code) et
+  nginx met `/django-admin/2fa/` dans la même zone `foxugly_login` que le login (10 r/min par IP).
+- **Téléphone perdu / bloqué** (sur le box, comme l'unité `foxugly-gunicorn` le lancerait) :
+
+  ```bash
+  sudo systemd-run --wait --pipe --quiet --uid=django --gid=www-data \
+    -p EnvironmentFile=/run/foxugly/.env -p WorkingDirectory=/var/www/django_websites/foxugly/backend \
+    /var/www/django_websites/foxugly/backend/.venv/bin/python manage.py admin_2fa_reset <email>
+  ```
+
+  supprime les appareils du compte (nouvel enrôlement à la prochaine connexion admin) ; `--unlock`
+  vide seulement le délai de throttling.
+- **Tests de pages admin** : `admin_2fa.testing.force_admin_login(client, user)`, pas
+  `client.force_login` (l'admin redirigerait vers le second facteur). Les tests qui rendent des
+  templates admin surchargent `STORAGES` (pas de manifest WhiteNoise sans `collectstatic`).
+- **Secrets** : ne jamais logger ni envoyer à Sentry la clé TOTP, le QR ou un code de secours (les
+  vues les gardent dans des `Redacted`, le champ s'appelle `token`, nettoyé par Sentry).
+
 ## Frontend (Angular + PrimeNG) — construit
 
 Implémenté et conforme à la maquette. Repères pour intervenir :
