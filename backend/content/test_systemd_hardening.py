@@ -46,3 +46,8 @@ class SystemdHardeningTests(unittest.TestCase):
             text = read(unit)
             self.assertIn("--pool=solo", text, unit)
             self.assertNotIn("--concurrency", text, unit)
+
+    def test_gunicorn_control_socket_is_disabled(self):
+        """gunicorn >= 25.1 opens $HOME/.gunicorn/gunicorn.ctl, shared by every site run as django."""
+        conf = (_repo_root() / "backend" / "gunicorn.conf.py").read_text(encoding="utf-8")
+        self.assertIn("control_socket_disable = True", conf.splitlines())

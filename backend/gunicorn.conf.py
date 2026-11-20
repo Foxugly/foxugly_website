@@ -20,3 +20,8 @@ timeout = int(os.environ.get("GUNICORN_TIMEOUT", "60"))
 accesslog = "-"   # vers journald via systemd
 errorlog = "-"
 loglevel = os.environ.get("GUNICORN_LOGLEVEL", "info")
+
+# gunicorn >= 25.1 ouvre par defaut un socket de controle (gunicornc) dans
+# $HOME/.gunicorn/gunicorn.ctl, chemin partage par tous les sites qui tournent
+# sous l'utilisateur django : on le coupe, il n'est pas utilise.
+control_socket_disable = True
