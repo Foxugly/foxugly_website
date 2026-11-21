@@ -18,7 +18,15 @@ cd /var/www/django_websites/foxugly/backend
 [ -d .venv ] || python3 -m venv .venv
 . .venv/bin/activate
 pip install --upgrade pip
-pip install -r requirements.txt
+# requirements.txt est le verrou à hashes que la CI teste (généré depuis
+# requirements.in par la commande uv de son en-tête). requirements.in déclare
+# des plages : un simple `pip install -r` gardait toute version installée encore
+# dans la plage, et la prod ratait les correctifs (de sécurité compris) que la
+# CI, installée à neuf, testait. --require-hashes installe exactement ces
+# versions et ces artefacts, rien n'est résolu sur la machine ; pip check fait
+# échouer le déploiement si le verrou oublie une dépendance.
+pip install --require-hashes --no-deps -r requirements.txt
+pip check
 
 # Charge TOUT l'env runtime (lecture LITTÉRALE clé=valeur, sans `source` → pas
 # d'eval shell sur des valeurs à caractères spéciaux) pour que migrate /

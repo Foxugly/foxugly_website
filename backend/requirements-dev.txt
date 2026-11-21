@@ -1,3 +1,6 @@
 # Dépendances de développement / CI (hors runtime).
--r requirements.txt
+# Pas de `-r requirements.txt` : ce verrou porte des hashes, et pip impose alors
+# les hashes à toute l'installation. Installer en deux temps :
+#   pip install --require-hashes -r requirements.txt
+#   pip install -r requirements-dev.txt
 ruff>=0.17.5

@@ -58,7 +58,7 @@ sudo -u django bash
   set -a; . /run/foxugly/.env; set +a
   cd /var/www/django_websites/foxugly/backend
   python3 -m venv .venv && . .venv/bin/activate
-  pip install -r requirements.txt
+  pip install --require-hashes --no-deps -r requirements.txt && pip check
   python manage.py migrate
   python manage.py seed_content                  # ⚠ une seule fois (écrase le contenu)
   python manage.py createsuperuser
