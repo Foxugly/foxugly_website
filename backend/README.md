@@ -26,7 +26,8 @@ ajouter / réordonner / éditer les blocs (via GrapesJS dans une étape suivante
 cd backend
 python -m venv venv
 source venv/bin/activate        # Windows : venv\Scripts\activate
-pip install -r requirements.txt
+pip install --require-hashes --no-deps -r requirements.txt   # verrou à hashes : versions exactes de la prod
+pip install -r requirements.in -r requirements-dev.txt       # outils de dev + dépendances propres à Windows (colorama)
 
 python manage.py migrate
 python manage.py seed_content   # charge le contenu de la maquette

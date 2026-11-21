@@ -36,6 +36,12 @@ Lecture publique, écriture = admin connecté. Auth : session DRF **+ magic-link
 email (passwordless). Lancer : voir `backend/README.md` (`migrate` → `seed_content` →
 `runserver 8001`). Lint : `ruff check .` (config dans `backend/pyproject.toml`).
 
+Dépendances : les directes (plages) dans **`backend/requirements.in`** ; `backend/requirements.txt`
+est le **verrou à hashes** généré depuis lui (Linux / Python 3.12, ce que la prod exécute) — ne jamais
+l'éditer à la main, le régénérer avec la commande `uv pip compile` de son en-tête. Le déploiement
+l'installe en `--require-hashes --no-deps` + `pip check` ; l'étape CI « Lock is complete » fait de même
+dans un venv vierge. `requirements-dev.txt` ne doit jamais faire `-r requirements.txt`.
+
 Endpoints publics non authentifiés qui écrivent (`/api/contact/`, `/api/auth/magic-link/`)
 sont **throttlés** (`ScopedRateThrottle`, 5/min) ; le contact a aussi un **honeypot**
 (`website`). Sentry (erreurs) est actif si `SENTRY_DSN` est défini, avec `release` = SHA
