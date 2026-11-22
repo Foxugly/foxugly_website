@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Input,
   forwardRef,
   ViewEncapsulation,
 } from '@angular/core';
@@ -35,6 +36,7 @@ import 'quill/dist/quill.snow.css';
       class="rich-editor"
       [ngModel]="value"
       (onTextChange)="onChange($event.htmlValue ?? '')"
+      (onInit)="labelEditor($event.editor)"
       [formats]="formats"
     >
       <p-header>
@@ -66,6 +68,9 @@ export class RichEditorComponent implements ControlValueAccessor {
 
   protected value = '';
 
+  /** Nom accessible de la zone d'édition (un `<label for>` ne peut pas viser Quill). */
+  @Input() label = '';
+
   private onChangeFn: (value: string) => void = () => undefined;
   private onTouchedFn: () => void = () => undefined;
 
@@ -79,6 +84,13 @@ export class RichEditorComponent implements ControlValueAccessor {
 
   registerOnTouched(fn: () => void): void {
     this.onTouchedFn = fn;
+  }
+
+  /** Donne un nom et un rôle accessibles à la zone contenteditable de Quill. */
+  labelEditor(editor: { root: HTMLElement }): void {
+    editor.root.setAttribute('role', 'textbox');
+    editor.root.setAttribute('aria-multiline', 'true');
+    if (this.label) editor.root.setAttribute('aria-label', this.label);
   }
 
   /** Propage la nouvelle valeur HTML (vide si Quill renvoie null). */

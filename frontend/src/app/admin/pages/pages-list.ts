@@ -47,14 +47,15 @@ import { PageNav } from '../../core/models';
     </table>
 
     @if (showNew()) {
-      <div class="overlay" (click)="showNew.set(false)">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="overlay" (click)="$event.target === $event.currentTarget && showNew.set(false)"
+           (keydown.escape)="showNew.set(false)" tabindex="-1">
+        <div class="modal" role="dialog" aria-modal="true">
           <h3>Nouvelle page</h3>
           <div class="form-grid cols-2">
-            <div class="field"><label>Titre</label><input [(ngModel)]="draft.title" /></div>
-            <div class="field"><label>Slug (URL)</label><input [(ngModel)]="draft.slug" placeholder="ma-page" /></div>
+            <div class="field"><label for="np_title">Titre</label><input id="np_title" [(ngModel)]="draft.title" /></div>
+            <div class="field"><label for="np_slug">Slug (URL)</label><input id="np_slug" [(ngModel)]="draft.slug" placeholder="ma-page" /></div>
           </div>
-          <div class="field"><label>Libellé menu</label><input [(ngModel)]="draft.nav_label" /></div>
+          <div class="field"><label for="np_nav">Libellé menu</label><input id="np_nav" [(ngModel)]="draft.nav_label" /></div>
           <div class="switch-row">
             <input type="checkbox" id="np" [(ngModel)]="draft.is_published" />
             <label for="np">Publier immédiatement</label>

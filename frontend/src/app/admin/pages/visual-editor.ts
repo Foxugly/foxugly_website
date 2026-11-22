@@ -54,7 +54,7 @@ import { setSafeHtml } from '../blocks/safe-html';
               <h3>{{ labels[b.block_type] }}</h3>
               <button class="btn btn-danger btn-sm" (click)="deleteSelected()">Supprimer</button>
             </div>
-            <app-block-form [block]="b" (save)="onSave(b, $event)" (cancel)="selected.set(null)" />
+            <app-block-form [block]="b" (save)="onSave(b, $event)" (cancelled)="selected.set(null)" />
           </aside>
         }
       </div>
