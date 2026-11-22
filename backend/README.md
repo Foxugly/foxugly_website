@@ -17,26 +17,26 @@ Le site fonctionne comme un **page builder** :
   des modèles dédiés qu'un bloc « liste » affiche.
 - **Réglages du site** — nom de marque, accroche, email, pied de page.
 
-Cette structure est la fondation d'un éditeur visuel : l'admin Angular pourra
-ajouter / réordonner / éditer les blocs (via GrapesJS dans une étape suivante).
+Le back-office Angular (`/admin/`) ajoute / réordonne / édite les blocs, y compris via
+l'éditeur visuel GrapesJS ; le modèle de blocs de l'API reste la source de vérité.
 
 ## Démarrage
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate        # Windows : venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate       # Windows : .venv\Scripts\activate
 pip install --require-hashes --no-deps -r requirements.txt   # verrou à hashes : versions exactes de la prod
 pip install -r requirements.in -r requirements-dev.txt       # outils de dev + dépendances propres à Windows (colorama)
 
 python manage.py migrate
 python manage.py seed_content   # charge le contenu de la maquette
 python manage.py createsuperuser
-python manage.py runserver
+python manage.py runserver 8001   # 8000 = QuizOnline en local ; le proxy Angular vise 8001
 ```
 
 - Admin Django : http://127.0.0.1:8001/django-admin/ (`/admin/` = back-office Angular)
-- API : http://127.0.0.1:8000/api/
+- API : http://127.0.0.1:8001/api/
 
 ## Principaux points d'API
 

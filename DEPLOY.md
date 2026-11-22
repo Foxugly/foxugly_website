@@ -1,6 +1,6 @@
 # Déploiement — foxugly
 
-foxugly tourne sur la **même EC2 que quizonline** (t3.small, eu-west-1) et suit le
+foxugly tourne sur l'**EC2 partagée de la flotte** (t3.large, eu-west-1, voir `OPERATIONS.md`) et suit le
 **même pattern S3-bundle** : build en CI → bundle dans S3 → SSM dit à l'instance de
 télécharger et déployer. **Aucune compilation sur le serveur.**
 
@@ -11,9 +11,12 @@ Internet ─► nginx (443/80, partagé)
               │                + /media → /var/www/django_websites/foxugly/backend/media
               └─ quizonline.…  (Gunicorn :8000)
             Gunicorn foxugly  [systemd: foxugly-gunicorn.service, :8004]
-            secrets : /run/foxugly/.env  [systemd: foxugly-env.service ← SSM Parameter Store]
+            secrets : /run/foxugly/.env  [systemd: foxugly-env-fetch.service ← SSM Parameter Store]
+            cache    : Redis db 11 (throttling partagé entre workers ; repli LocMem sans `REDIS_URL`)
 
 CI (push main) → build front+back → s3://foxugly-deploy/builds/foxugly/ → SSM (root) :
+  miroir nu root  → /var/lib/fleet-deploy/foxugly_website.git fetché au SHA poussé
+                    (root n'installe JAMAIS un fichier lu dans l'arbre écrit par django)
   privileged step → /usr/local/sbin/foxugly-deploy-privileged.sh (nginx + units, pré-chown)
   app step        → ssm-deploy.sh en `sudo -u django` (pip + migrate + collectstatic)
 ```
@@ -48,10 +51,10 @@ sudo tar xzf /tmp/b.tgz -C /var/www/django_websites/foxugly
 sudo chown -R django:www-data /var/www/django_websites/foxugly
 
 # Services (depuis le bundle) + génération de l'env
-sudo cp /var/www/django_websites/foxugly/deploy/foxugly-env.service /etc/systemd/system/
+sudo cp /var/www/django_websites/foxugly/deploy/foxugly-env-fetch.service /etc/systemd/system/
 sudo cp /var/www/django_websites/foxugly/deploy/foxugly-gunicorn.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now foxugly-env          # écrit /run/foxugly/.env depuis SSM
+sudo systemctl enable --now foxugly-env-fetch          # écrit /run/foxugly/.env depuis SSM
 
 # Init base + contenu + admin (une seule fois), env chargé depuis /run
 sudo -u django bash
@@ -86,7 +89,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## 2. Secrets — SSM Parameter Store → `/run/foxugly/.env`
 
-`/run/foxugly/.env` (tmpfs) est régénéré à chaque boot par `foxugly-env.service`,
+`/run/foxugly/.env` (tmpfs) est régénéré à chaque boot par `foxugly-env-fetch.service`,
 qui lit `/foxugly/prod/*`. Créer les paramètres une fois :
 
 ```bash
@@ -118,7 +121,7 @@ aws ssm put-parameter $R --type String       --name /foxugly/prod/SITE_URL      
 
 Voir `backend/.env.example` pour la liste. Après modif (rotation de secrets), en tant
 que `django` via le drop-in sudoers (§5, sans le sudo global de `ubuntu`) :
-`sudo /bin/systemctl restart foxugly-env foxugly-gunicorn`.
+`sudo /bin/systemctl restart foxugly-env-fetch foxugly-gunicorn`.
 
 ---
 
@@ -174,8 +177,8 @@ Commandes accordées (chemins absolus, args exacts) :
 | Commande | Usage |
 |---|---|
 | `sudo /bin/systemctl restart foxugly-gunicorn` | redéploiement / restart app |
-| `sudo /bin/systemctl restart foxugly-env` | rotation des secrets (re-fetch SSM) |
-| `sudo /bin/systemctl restart foxugly-env foxugly-gunicorn` | les deux d'un coup |
+| `sudo /bin/systemctl restart foxugly-env-fetch` | rotation des secrets (re-fetch SSM) |
+| `sudo /bin/systemctl restart foxugly-env-fetch foxugly-gunicorn` | les deux d'un coup |
 | `sudo /usr/sbin/nginx -t` + `sudo /bin/systemctl reload nginx` | recharge nginx à chaud |
 
 **Durcissement** : le drop-in n'accorde **aucune** modification d'unit (`cp …service`,
@@ -275,7 +278,7 @@ aws ssm put-parameter $R --type String       --name /foxugly/prod/DB_HOST     --
 aws ssm put-parameter $R --type String       --name /foxugly/prod/DB_PORT     --value 5432
 
 # 4. régénérer l'env + créer le schéma + charger les données dans postgres
-sudo systemctl restart foxugly-env
+sudo systemctl restart foxugly-env-fetch
 grep '^DB' /run/foxugly/.env            # vérifier les 6 vars
 sudo -u django bash -c '
   set -a; . /run/foxugly/.env; set +a
@@ -291,15 +294,16 @@ rm -f /tmp/foxugly_data.json                   # contient des données → ne pa
 ```
 
 `db.sqlite3` est conservé comme **backup** (à supprimer seulement après quelques jours
-de prod Postgres sereins). Backups Postgres : prévoir un `pg_dump` régulier de la base
-`foxugly` (cron + bucket S3), l'instance pouvant être éphémère.
+de prod Postgres sereins). Backups : couverts par la sauvegarde de flotte
+(`fleet-db-backup.timer`, dump hebdo de **toutes** les bases vers `s3://foxugly-db-backups/` + snapshot
+DLM du volume, `OPERATIONS.md §3.23`) — rien à configurer par site.
 
 ---
 
 ## Notes
-- **Base SQLite** dans `/var/www/django_websites/foxugly/backend/db.sqlite3` (hors bundle, persistée
-  entre déploiements). **Médias** dans `/var/www/django_websites/foxugly/backend/media/` (idem). Prévoir
-  une sauvegarde si l'instance est éphémère (ou bucket S3).
+- **Base** : PostgreSQL local (§7) ; `DB_ENGINE` absent = repli SQLite (`backend/db.sqlite3`, dev).
+  **Médias** dans `/var/www/django_websites/foxugly/backend/media/` (hors bundle, persistés entre
+  déploiements, couverts par le snapshot DLM hebdo du volume).
 - **Frontend** : buildé en CI et livré dans le bundle ; nginx le sert directement.
 - Passage à **PostgreSQL** : aucun changement de code (`settings.py` est déjà piloté
   par env). Définir `DB_ENGINE=postgresql` + `DB_*` dans SSM `/foxugly/prod/`
