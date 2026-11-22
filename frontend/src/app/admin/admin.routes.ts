@@ -1,4 +1,10 @@
+import { inject, provideEnvironmentInitializer } from '@angular/core';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { Routes } from '@angular/router';
+import Aura from '@primeng/themes/aura';
+import { PrimeNG } from 'primeng/config';
+
+import { loadAdminStyles } from './admin-styles';
 
 import { adminGuard } from './auth.guard';
 import { Login } from './login/login';
@@ -11,7 +17,25 @@ import { VisualEditor } from './pages/visual-editor';
 import { CollectionEditor } from './collections/collection-editor';
 import { SettingsEditor } from './settings/settings-editor';
 
-export const ADMIN_ROUTES: Routes = [
+/**
+ * PrimeNG n'est utilisé que dans l'admin : thème et animations sont fournis ici,
+ * dans le chunk admin chargé à la demande, plutôt que dans app.config.ts.
+ * `providePrimeNG()` passe par un app initializer, qui ne s'exécute pas dans un
+ * injecteur de route : on configure donc directement le service (root) PrimeNG.
+ * cssLayer : les styles PrimeNG restent dans une couche basse → ne surchargent
+ * pas la charte.
+ */
+const ADMIN_PROVIDERS = [
+  provideAnimationsAsync(),
+  provideEnvironmentInitializer(() => {
+    inject(PrimeNG).setConfig({
+      theme: { preset: Aura, options: { darkModeSelector: false, cssLayer: { name: 'primeng' } } },
+    });
+    loadAdminStyles();
+  }),
+];
+
+const ROUTES: Routes = [
   { path: 'login', component: Login },
   { path: 'magic', component: MagicLogin },
   // Éditeur visuel : plein écran, hors de l'AdminShell (pas de sidebar).
@@ -31,3 +55,5 @@ export const ADMIN_ROUTES: Routes = [
     ],
   },
 ];
+
+export const ADMIN_ROUTES: Routes = [{ path: '', providers: ADMIN_PROVIDERS, children: ROUTES }];

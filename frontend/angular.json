@@ -34,15 +34,20 @@
                 "input": "public"
               }
             ],
-            "styles": ["node_modules/grapesjs/dist/css/grapes.min.css", "src/styles.scss"]
+            "styles": [
+              "src/styles.scss",
+              { "input": "node_modules/primeicons/primeicons.css", "bundleName": "admin-icons", "inject": false },
+              { "input": "node_modules/grapesjs/dist/css/grapes.min.css", "bundleName": "admin-grapes", "inject": false },
+              { "input": "node_modules/quill/dist/quill.snow.css", "bundleName": "admin-quill", "inject": false }
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "450kB",
+                  "maximumError": "600kB"
                 },
                 {
                   "type": "anyComponentStyle",

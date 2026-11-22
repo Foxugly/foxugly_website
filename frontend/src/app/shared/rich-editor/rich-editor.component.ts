@@ -11,8 +11,6 @@ import { SharedModule } from 'primeng/api';
 
 // CSS de Quill (thème « snow ») importée ici, dans un composant chargé
 // uniquement par le bundle admin (lazy) → ne fuit pas dans le bundle public.
-import 'quill/dist/quill.snow.css';
-
 /**
  * Éditeur de texte enrichi partagé (admin uniquement).
  *
@@ -21,10 +19,9 @@ import 'quill/dist/quill.snow.css';
  * `ControlValueAccessor` pour fonctionner avec `[(ngModel)]`. La valeur
  * échangée est une chaîne HTML.
  *
- * `ViewEncapsulation.None` permet à la feuille de style `quill.snow.css`
- * importée ci-dessus de styliser le Quill rendu (qui vit hors de la portée
- * Angular). Le composant n'est référencé que depuis l'admin (block-form /
- * collection-editor), donc cette CSS (~24 ko) reste dans le chunk admin.
+ * Le thème `quill.snow.css` est servi en feuille séparée (`admin-quill.css`,
+ * `angular.json`) et chargé à l'entrée dans l'admin (`admin/admin-styles.ts`) :
+ * un `import` CSS depuis TypeScript était émis par le build mais jamais lié.
  */
 @Component({
   selector: 'app-rich-editor',
