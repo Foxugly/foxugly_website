@@ -1,5 +1,9 @@
 # Brief frontend — foxugly (Angular + PrimeNG)
 
+> **Document historique** : cahier des charges qui a servi à construire le frontend (livré).
+> L'état actuel est décrit dans `CLAUDE.md` ; ce brief reste la référence des schémas de
+> `content` par type de bloc (§5-6), cités par `models.ts` et `block-schema.ts`.
+
 Document de cadrage pour construire le **frontend Angular**. Le backend Django est
 **terminé** et expose une API REST (voir `backend/README.md`). Le frontend doit tout
 tirer de cette API pour que le contenu reste éditable depuis l'admin.
