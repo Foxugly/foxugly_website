@@ -15,8 +15,31 @@ set -euo pipefail
 umask 027   # fichiers 640 / dossiers 750, sans écriture-groupe ni accès "autres"
 
 cd /var/www/django_websites/foxugly/backend
-[ -d .venv ] || python3 -m venv .venv
-. .venv/bin/activate
+VENV=/var/www/django_websites/foxugly/backend/.venv
+
+# Le venv doit tourner sur $PYTHON (python3.14 deadsnakes, root, dans /usr/bin).
+# Un venv sur une autre version (ou absent) est reconstruit À SON CHEMIN FINAL —
+# jamais construit ailleurs puis déplacé : les shebangs des console-scripts
+# (.venv/bin/gunicorn, utilisé par l'unit) codent le chemin du venv en dur.
+# L'ancien est gardé en .venv.prev et remis en place si la reconstruction échoue.
+PYTHON=/usr/bin/python3.14
+PY_WANT="$("$PYTHON" -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+PY_HAVE="$("$VENV/bin/python" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || echo none)"
+if [ "$PY_HAVE" != "$PY_WANT" ]; then
+    echo ">>> Rebuilding the venv: Python $PY_HAVE -> $PY_WANT..."
+    rm -rf "$VENV.prev"
+    if [ -e "$VENV" ]; then mv "$VENV" "$VENV.prev"; fi
+    if ! { "$PYTHON" -m venv "$VENV" \
+           && "$VENV/bin/pip" install --quiet --require-hashes --no-deps -r requirements.txt \
+           && "$VENV/bin/pip" check; }; then
+        echo "ERROR: venv rebuild failed; restoring the previous venv." >&2
+        rm -rf "$VENV"
+        if [ -e "$VENV.prev" ]; then mv "$VENV.prev" "$VENV"; fi
+        exit 1
+    fi
+fi
+
+. "$VENV/bin/activate"
 pip install --upgrade pip
 # requirements.txt est le verrou à hashes que la CI teste (généré depuis
 # requirements.in par la commande uv de son en-tête). requirements.in déclare

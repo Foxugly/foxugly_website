@@ -1,6 +1,6 @@
 [tool.ruff]
 # Lint du backend Django. Migrations exclues (générées).
-target-version = "py312"
+target-version = "py314"
 line-length = 100
 extend-exclude = ["migrations"]
 

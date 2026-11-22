@@ -18,7 +18,9 @@ CI (push main) → build front+back → s3://foxugly-deploy/builds/foxugly/ → 
   miroir nu root  → /var/lib/fleet-deploy/foxugly_website.git fetché au SHA poussé
                     (root n'installe JAMAIS un fichier lu dans l'arbre écrit par django)
   privileged step → /usr/local/sbin/foxugly-deploy-privileged.sh (nginx + units, pré-chown)
-  app step        → ssm-deploy.sh en `sudo -u django` (pip + migrate + collectstatic)
+  app step        → ssm-deploy.sh en `sudo -u django` (venv reconstruit sur place si pas en
+                    /usr/bin/python3.14 — l'ancien gardé en .venv.prev, restauré si échec ;
+                    pip + migrate + collectstatic)
 ```
 
 ---
@@ -26,7 +28,7 @@ CI (push main) → build front+back → s3://foxugly-deploy/builds/foxugly/ → 
 ## 1. Provisioning (une seule fois)
 
 Sur l'instance (déjà gérée par SSM via le rôle `foxugly-fleet-ec2`). Pré-requis :
-`python3`+`venv`, `nginx`, **AWS CLI** (pour `s3 cp`). Pas besoin de node/git.
+`python3.14` (deadsnakes, `/usr/bin/python3.14`) + `python3.14-venv`, `nginx`, **AWS CLI** (pour `s3 cp`). Pas besoin de node/git.
 
 ```bash
 # Répertoires (le code arrivera par le bundle). On réutilise l'utilisateur
@@ -60,7 +62,7 @@ sudo systemctl enable --now foxugly-env-fetch          # écrit /run/foxugly/.en
 sudo -u django bash
   set -a; . /run/foxugly/.env; set +a
   cd /var/www/django_websites/foxugly/backend
-  python3 -m venv .venv && . .venv/bin/activate
+  /usr/bin/python3.14 -m venv .venv && . .venv/bin/activate
   pip install --require-hashes --no-deps -r requirements.txt && pip check
   python manage.py migrate
   python manage.py seed_content                  # ⚠ une seule fois (écrase le contenu)
@@ -80,7 +82,8 @@ sudo nginx -t && sudo systemctl reload nginx
 > SSM (root) extrait le bundle (root-owned), installe la **step privilégiée** dans
 > `/usr/local/sbin` et l'exécute **avant** le `chown django` (sync nginx sites-available
 > + symlink + `nginx -t` + reload, sync units + daemon-reload) ; puis `chown django` ;
-> puis `ssm-deploy.sh` en `sudo -u django` (pip install → migrate → collectstatic) ;
+> puis `ssm-deploy.sh` en `sudo -u django` (venv reconstruit sur place s'il n'est pas en
+> Python 3.14 → pip install → migrate → collectstatic) ;
 > puis `restart` + normalisation des perms en root (§3.10/§3.11 OPERATIONS.md — modèle
 > quizonline). Les évolutions de `deploy/nginx.conf` se déploient donc seules.
 > `seed_content` n'est **jamais** rejoué.
