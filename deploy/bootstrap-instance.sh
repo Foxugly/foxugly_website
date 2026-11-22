@@ -26,7 +26,7 @@ set -euo pipefail
 umask 027
 set -a; . /run/foxugly/.env; set +a
 cd /var/www/django_websites/foxugly/backend
-python3 -m venv .venv
+/usr/bin/python3.14 -m venv .venv
 . .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt

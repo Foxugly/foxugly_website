@@ -37,7 +37,7 @@ email (passwordless). Lancer : voir `backend/README.md` (`migrate` → `seed_con
 `runserver 8001`). Lint : `ruff check .` (config dans `backend/pyproject.toml`).
 
 Dépendances : les directes (plages) dans **`backend/requirements.in`** ; `backend/requirements.txt`
-est le **verrou à hashes** généré depuis lui (Linux / Python 3.12, ce que la prod exécute) — ne jamais
+est le **verrou à hashes** généré depuis lui (Linux / Python 3.14, ce que la prod exécute — deadsnakes `/usr/bin/python3.14` sur le box) — ne jamais
 l'éditer à la main, le régénérer avec la commande `uv pip compile` de son en-tête. Le déploiement
 l'installe en `--require-hashes --no-deps` + `pip check` ; l'étape CI « Lock is complete » fait de même
 dans un venv vierge. `requirements-dev.txt` ne doit jamais faire `-r requirements.txt`.

@@ -6,7 +6,7 @@ Site vitrine de **foxugly** (coaching agile) : API Django REST (`backend/`) et S
 
 ## Développement
 
-Backend (Python 3.14 en local, 3.12 en prod) — détails dans [`backend/README.md`](backend/README.md) :
+Backend (Python 3.14 en local et en prod — deadsnakes `/usr/bin/python3.14` sur le box) — détails dans [`backend/README.md`](backend/README.md) :
 
 ```powershell
 cd backend

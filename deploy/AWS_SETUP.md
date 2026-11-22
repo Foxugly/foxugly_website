@@ -71,7 +71,7 @@ On réutilise l'utilisateur existant **`django`** (groupe `www-data`) — pas de
 nouvel utilisateur à créer.
 ```bash
 sudo mkdir -p /var/www/django_websites/foxugly/backend/media && sudo chown -R django:www-data /var/www/django_websites/foxugly
-sudo apt-get install -y python3-venv
+sudo apt-get install -y python3.14 python3.14-venv   # deadsnakes PPA
 ```
 
 ## 7. Premier déploiement (bootstrap)
