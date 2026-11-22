@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorHandler, Injectable } from '@angular/core';
 import * as Sentry from '@sentry/browser';
 
@@ -56,12 +57,26 @@ export function initSentry(): void {
   });
 }
 
+/**
+ * Normalise une erreur pour Sentry. `HttpErrorResponse` n'hérite pas d'`Error` :
+ * sans ce cas, `String(err)` donnait un « Error: [object Object] » illisible.
+ */
+export function toError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (error instanceof HttpErrorResponse) {
+    const err = new Error(`HTTP ${error.status} ${error.statusText || ''} ${scrubUrl(error.url ?? '')}`.replace(/\s+/g, ' ').trim());
+    err.name = 'HttpErrorResponse';
+    return err;
+  }
+  return new Error(String(error));
+}
+
 /** Remonte les erreurs Angular non gérées à Sentry (si activé), et les loggue. */
 @Injectable()
 export class SentryErrorHandler implements ErrorHandler {
   handleError(error: unknown): void {
     if (SENTRY_DSN) {
-      Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
+      Sentry.captureException(toError(error));
     }
     console.error(error);
   }

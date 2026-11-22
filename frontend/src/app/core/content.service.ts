@@ -20,13 +20,23 @@ export class ContentService {
   /** Pages affichées dans la navigation (cachées une fois chargées). */
   private nav$?: Observable<PageNav[]>;
   /** Réglages globaux (cachés une fois chargés). */
-  private settings$?: Observable<SiteSettings>;
+  private settings$?: Observable<SiteSettings | null>;
 
   navPages(): Observable<PageNav[]> {
     if (!this.nav$) {
       this.nav$ = this.http
         .get<Paginated<PageNav>>(`${API_BASE}/pages/`, this.opts)
-        .pipe(map(r => r.results.filter(p => p.show_in_nav)), shareReplay(1));
+        .pipe(
+          map(r => r.results.filter(p => p.show_in_nav)),
+          // Erreur réseau : nav vide plutôt qu'une exception non gérée dans le
+          // pipe `async` ; on vide le cache pour réessayer au prochain appel.
+          catchError(err => {
+            console.error('Chargement de la navigation impossible :', err);
+            this.nav$ = undefined;
+            return of([] as PageNav[]);
+          }),
+          shareReplay(1),
+        );
     }
     return this.nav$;
   }
@@ -35,11 +45,19 @@ export class ContentService {
     return this.http.get<PageDetail>(`${API_BASE}/pages/${slug}/`, this.opts);
   }
 
-  settings(): Observable<SiteSettings> {
+  /** `null` si l'API est injoignable (les gabarits masquent alors le bloc). */
+  settings(): Observable<SiteSettings | null> {
     if (!this.settings$) {
       this.settings$ = this.http
         .get<SiteSettings>(`${API_BASE}/settings/`, this.opts)
-        .pipe(shareReplay(1));
+        .pipe(
+          catchError(err => {
+            console.error('Chargement des réglages impossible :', err);
+            this.settings$ = undefined;
+            return of(null);
+          }),
+          shareReplay(1),
+        );
     }
     return this.settings$;
   }

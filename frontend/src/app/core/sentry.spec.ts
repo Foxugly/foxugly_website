@@ -1,4 +1,6 @@
-import { scrubUrl } from './sentry';
+import { HttpErrorResponse } from '@angular/common/http';
+
+import { scrubUrl, toError } from './sentry';
 
 describe('scrubUrl', () => {
   it('masque token/uid/code en query et en fragment', () => {
@@ -10,5 +12,18 @@ describe('scrubUrl', () => {
 
   it('laisse les autres URLs intactes', () => {
     expect(scrubUrl('/accueil?page=2')).toBe('/accueil?page=2');
+  });
+});
+
+describe('toError', () => {
+  it('rend une HttpErrorResponse lisible (plus de « [object Object] »)', () => {
+    const err = toError(new HttpErrorResponse({ status: 0, url: 'https://foxugly.com/api/pages/?token=x' }));
+    expect(err.name).toBe('HttpErrorResponse');
+    expect(err.message).toBe('HTTP 0 Unknown Error https://foxugly.com/api/pages/?token=[Filtered]');
+  });
+
+  it('garde les Error telles quelles', () => {
+    const e = new Error('boom');
+    expect(toError(e)).toBe(e);
   });
 });
