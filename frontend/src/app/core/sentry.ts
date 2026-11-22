@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorHandler, Injectable } from '@angular/core';
-import * as Sentry from '@sentry/browser';
+import type * as SentryNs from '@sentry/browser';
 
 import { SENTRY_DSN, SENTRY_ENV, SENTRY_RELEASE } from './sentry.config';
 
@@ -9,12 +9,18 @@ export function scrubUrl(url: string): string {
   return url.replace(/([?&#](?:token|uid|code)=)[^&#]*/gi, '$1[Filtered]');
 }
 
-function scrubEvent<T extends Sentry.Event>(event: T): T {
+function scrubEvent<T extends SentryNs.Event>(event: T): T {
   if (event.request?.url) {
     event.request.url = scrubUrl(event.request.url);
   }
   return event;
 }
+
+/**
+ * SDK chargé par import dynamique (~85 ko hors du bundle initial) ; `null` tant
+ * que Sentry est désactivé (pas de DSN, dev local).
+ */
+let sentry: Promise<typeof SentryNs> | null = null;
 
 /** Initialise Sentry si un DSN est configuré (no-op sinon). Appelé dans main.ts. */
 export function initSentry(): void {
@@ -29,31 +35,34 @@ export function initSentry(): void {
   if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
     return;
   }
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: SENTRY_ENV,
-    release: SENTRY_RELEASE || undefined,
-    // Transitoire et bénin : un client gardant un onglet périmé après un
-    // nouveau déploiement échoue à charger un lazy-chunk renommé. Non
-    // actionnable — ne pas le remonter.
-    ignoreErrors: [
-      /Failed to fetch dynamically imported module/i,
-      /error loading dynamically imported module/i,
-    ],
-    // Aucun jeton dans Sentry : URL de l'événement et breadcrumbs (navigation, xhr).
-    beforeSend: event => scrubEvent(event),
-    beforeSendTransaction: event => scrubEvent(event),
-    beforeBreadcrumb: crumb => {
-      const data = crumb.data as Record<string, unknown> | undefined;
-      if (data) {
-        for (const key of ['url', 'from', 'to']) {
-          if (typeof data[key] === 'string') {
-            data[key] = scrubUrl(data[key] as string);
+  sentry = import('@sentry/browser').then((Sentry) => {
+    Sentry.init({
+      dsn: SENTRY_DSN,
+      environment: SENTRY_ENV,
+      release: SENTRY_RELEASE || undefined,
+      // Transitoire et bénin : un client gardant un onglet périmé après un
+      // nouveau déploiement échoue à charger un lazy-chunk renommé. Non
+      // actionnable — ne pas le remonter.
+      ignoreErrors: [
+        /Failed to fetch dynamically imported module/i,
+        /error loading dynamically imported module/i,
+      ],
+      // Aucun jeton dans Sentry : URL de l'événement et breadcrumbs (navigation, xhr).
+      beforeSend: (event) => scrubEvent(event),
+      beforeSendTransaction: (event) => scrubEvent(event),
+      beforeBreadcrumb: (crumb) => {
+        const data = crumb.data as Record<string, unknown> | undefined;
+        if (data) {
+          for (const key of ['url', 'from', 'to']) {
+            if (typeof data[key] === 'string') {
+              data[key] = scrubUrl(data[key] as string);
+            }
           }
         }
-      }
-      return crumb;
-    },
+        return crumb;
+      },
+    });
+    return Sentry;
   });
 }
 
@@ -64,7 +73,11 @@ export function initSentry(): void {
 export function toError(error: unknown): Error {
   if (error instanceof Error) return error;
   if (error instanceof HttpErrorResponse) {
-    const err = new Error(`HTTP ${error.status} ${error.statusText || ''} ${scrubUrl(error.url ?? '')}`.replace(/\s+/g, ' ').trim());
+    const err = new Error(
+      `HTTP ${error.status} ${error.statusText || ''} ${scrubUrl(error.url ?? '')}`
+        .replace(/\s+/g, ' ')
+        .trim(),
+    );
     err.name = 'HttpErrorResponse';
     return err;
   }
@@ -75,8 +88,9 @@ export function toError(error: unknown): Error {
 @Injectable()
 export class SentryErrorHandler implements ErrorHandler {
   handleError(error: unknown): void {
-    if (SENTRY_DSN) {
-      Sentry.captureException(toError(error));
+    if (sentry) {
+      // Les erreurs survenues avant la fin du chargement attendent le SDK.
+      sentry.then((Sentry) => Sentry.captureException(toError(error))).catch(() => undefined);
     }
     console.error(error);
   }
