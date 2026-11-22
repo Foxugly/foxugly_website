@@ -101,25 +101,26 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
     </table>
 
     @if (draft(); as d) {
-      <div class="overlay" (click)="draft.set(null)">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="overlay" (click)="$event.target === $event.currentTarget && draft.set(null)"
+           (keydown.escape)="draft.set(null)" tabindex="-1">
+        <div class="modal" role="dialog" aria-modal="true">
           <h3>{{ d.id ? 'Modifier' : 'Nouvel élément' }}</h3>
           <div class="form-grid">
             @for (f of config().fields; track f.key) {
               @switch (f.kind) {
                 @case ('textarea') {
-                  <div class="field"><label>{{ f.label }}</label>
-                    <textarea rows="3" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}"></textarea>
+                  <div class="field"><label [for]="'c_'+f.key">{{ f.label }}</label>
+                    <textarea [id]="'c_'+f.key" rows="3" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}"></textarea>
                   </div>
                 }
                 @case ('richtext') {
-                  <div class="field"><label>{{ f.label }}</label>
-                    <app-rich-editor [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}" />
+                  <div class="field"><span class="field-label">{{ f.label }}</span>
+                    <app-rich-editor [label]="f.label" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}" />
                   </div>
                 }
                 @case ('number') {
-                  <div class="field"><label>{{ f.label }}</label>
-                    <input type="number" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = +$event" [ngModelOptions]="{standalone:true}" />
+                  <div class="field"><label [for]="'c_'+f.key">{{ f.label }}</label>
+                    <input [id]="'c_'+f.key" type="number" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = +$event" [ngModelOptions]="{standalone:true}" />
                   </div>
                 }
                 @case ('bool') {
@@ -129,19 +130,19 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
                   </div>
                 }
                 @case ('select') {
-                  <div class="field"><label>{{ f.label }}</label>
-                    <select [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}">
+                  <div class="field"><label [for]="'c_'+f.key">{{ f.label }}</label>
+                    <select [id]="'c_'+f.key" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}">
                       @for (o of f.options; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
                     </select>
                   </div>
                 }
                 @case ('date') {
-                  <div class="field"><label>{{ f.label }}</label>
-                    <input type="date" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}" />
+                  <div class="field"><label [for]="'c_'+f.key">{{ f.label }}</label>
+                    <input [id]="'c_'+f.key" type="date" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}" />
                   </div>
                 }
                 @case ('image') {
-                  <div class="field"><label>{{ f.label }}</label>
+                  <div class="field"><span class="field-label">{{ f.label }}</span>
                     <div class="image-field">
                       @if (filePreview()) {
                         <img class="logo-thumb" [src]="filePreview()" alt="aperçu" />
@@ -168,8 +169,8 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
                   </div>
                 }
                 @default {
-                  <div class="field"><label>{{ f.label }}</label>
-                    <input [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}" />
+                  <div class="field"><label [for]="'c_'+f.key">{{ f.label }}</label>
+                    <input [id]="'c_'+f.key" [ngModel]="d[f.key]" (ngModelChange)="d[f.key] = $event" [ngModelOptions]="{standalone:true}" />
                   </div>
                 }
               }

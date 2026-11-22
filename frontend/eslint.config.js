@@ -38,20 +38,19 @@ module.exports = defineConfig([
       // Le projet mélange volontairement `type` et `interface` (alias locaux courts) :
       // contrainte purement stylistique, non bloquante.
       '@typescript-eslint/consistent-type-definitions': 'off',
-      // @Output() nommé comme un événement DOM : suggestion, non bloquant.
-      '@angular-eslint/no-output-native': 'warn',
+      // @Output() nommé comme un événement DOM : interdit (masque l'événement natif).
+      '@angular-eslint/no-output-native': 'error',
     },
   },
   {
     files: ['**/*.html'],
     extends: [angular.configs.templateRecommended, angular.configs.templateAccessibility],
-    // Accessibilité : suggestions suivies en `warn` (non bloquantes pour la CI).
-    // Les occurrences actuelles sont dans le back-office admin (outil interne
-    // mono-utilisateur) ; à améliorer progressivement sur les pages publiques.
+    // Accessibilité : bloquante pour la CI depuis que l'admin est en règle
+    // (libellés reliés aux champs, modales fermables au clavier).
     rules: {
-      '@angular-eslint/template/label-has-associated-control': 'warn',
-      '@angular-eslint/template/click-events-have-key-events': 'warn',
-      '@angular-eslint/template/interactive-supports-focus': 'warn',
+      '@angular-eslint/template/label-has-associated-control': 'error',
+      '@angular-eslint/template/click-events-have-key-events': 'error',
+      '@angular-eslint/template/interactive-supports-focus': 'error',
     },
   },
 ]);

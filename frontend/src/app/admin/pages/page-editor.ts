@@ -57,10 +57,11 @@ import { BLOCK_TYPE_LABELS } from '../blocks/block-schema';
     }
 
     @if (editing(); as b) {
-      <div class="overlay" (click)="editing.set(null)">
-        <div class="modal" (click)="$event.stopPropagation()">
+      <div class="overlay" (click)="$event.target === $event.currentTarget && editing.set(null)"
+           (keydown.escape)="editing.set(null)" tabindex="-1">
+        <div class="modal" role="dialog" aria-modal="true">
           <h3>{{ labels[b.block_type] }}</h3>
-          <app-block-form [block]="b" (save)="onSave(b, $event)" (cancel)="editing.set(null)" />
+          <app-block-form [block]="b" (save)="onSave(b, $event)" (cancelled)="editing.set(null)" />
         </div>
       </div>
     }
