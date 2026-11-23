@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 
 import { Block } from '../../../core/models';
 import { HERO_DEFAULT_CARDS } from '../../../core/block-defaults';
@@ -7,19 +7,33 @@ import { LinkBtn } from '../../link-btn/link-btn';
 @Component({
   selector: 'app-hero',
   imports: [LinkBtn],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <header class="hero" [id]="block.anchor || null">
       <div class="wrap hero-grid">
         <div>
-          @if (c.badge) { <span class="hero-badge"><span class="dot"></span> {{ c.badge }}</span> }
-          <h1>{{ before }}<span class="hl">{{ c.highlight }}</span>{{ after }}</h1>
+          @if (c.badge) {
+            <span class="hero-badge"><span class="dot"></span> {{ c.badge }}</span>
+          }
+          <h1>
+            {{ before }}<span class="hl">{{ c.highlight }}</span
+            >{{ after }}
+          </h1>
           <div class="rich" [innerHTML]="c.text"></div>
           <div class="hero-actions">
             @if (c.primary_cta) {
-              <app-link-btn [href]="c.primary_cta.href" [label]="c.primary_cta.label + ' →'" cssClass="btn btn-primary" />
+              <app-link-btn
+                [href]="c.primary_cta.href"
+                [label]="c.primary_cta.label + ' →'"
+                cssClass="btn btn-primary"
+              />
             }
             @if (c.secondary_cta) {
-              <app-link-btn [href]="c.secondary_cta.href" [label]="c.secondary_cta.label" cssClass="btn btn-ghost" />
+              <app-link-btn
+                [href]="c.secondary_cta.href"
+                [label]="c.secondary_cta.label"
+                cssClass="btn btn-ghost"
+              />
             }
           </div>
         </div>
@@ -28,7 +42,9 @@ import { LinkBtn } from '../../link-btn/link-btn';
           @for (card of cards; track $index) {
             <div class="float-card" [class]="'fc' + ($index + 1)">
               <span class="ico">{{ card.icon }}</span>
-              <div>{{ card.label }}<small>{{ card.value }}</small></div>
+              <div>
+                {{ card.label }}<small>{{ card.value }}</small>
+              </div>
             </div>
           }
         </div>
@@ -38,7 +54,9 @@ import { LinkBtn } from '../../link-btn/link-btn';
 })
 export class Hero {
   @Input({ required: true }) block!: Block;
-  get c() { return this.block.content; }
+  get c() {
+    return this.block.content;
+  }
 
   /** Cartes flottantes du visuel — éditables via `content.cards`.
    *  Une liste explicitement vide masque les cartes ; le fallback ne sert

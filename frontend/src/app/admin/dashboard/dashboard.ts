@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
@@ -7,6 +7,7 @@ import { AdminApiService } from '../../core/admin-api.service';
 @Component({
   selector: 'app-admin-dashboard',
   imports: [RouterLink],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="admin-head">
       <div>
@@ -51,9 +52,14 @@ export class Dashboard {
       projects: this.api.list('projects'),
       partners: this.api.list('partners'),
       testimonials: this.api.list('testimonials'),
-    }).subscribe(r => this.counts.set({
-      pages: r.pages.length, news: r.news.length, projects: r.projects.length,
-      partners: r.partners.length, testimonials: r.testimonials.length,
-    }));
+    }).subscribe((r) =>
+      this.counts.set({
+        pages: r.pages.length,
+        news: r.news.length,
+        projects: r.projects.length,
+        partners: r.partners.length,
+        testimonials: r.testimonials.length,
+      }),
+    );
   }
 }

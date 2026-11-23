@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 
 import { Block } from '../../core/models';
 import { Hero } from '../blocks/hero/hero';
@@ -24,26 +24,70 @@ import { ContactInfo } from '../blocks/contact-info/contact-info';
 @Component({
   selector: 'app-block-renderer',
   imports: [
-    Hero, PageHero, Stats, Cards, Richtext, Timeline, Accordion,
-    Testimonials, LogoWall, NewsList, ProjectList, PartnerList, Cta, ContactForm, ContactInfo,
+    Hero,
+    PageHero,
+    Stats,
+    Cards,
+    Richtext,
+    Timeline,
+    Accordion,
+    Testimonials,
+    LogoWall,
+    NewsList,
+    ProjectList,
+    PartnerList,
+    Cta,
+    ContactForm,
+    ContactInfo,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @switch (block.block_type) {
-      @case ('hero') { <app-hero [block]="block" /> }
-      @case ('page_hero') { <app-page-hero [block]="block" /> }
-      @case ('stats') { <app-stats [block]="block" /> }
-      @case ('cards') { <app-cards [block]="block" [soft]="soft" /> }
-      @case ('richtext') { <app-richtext [block]="block" [soft]="soft" /> }
-      @case ('timeline') { <app-timeline [block]="block" [soft]="soft" /> }
-      @case ('accordion') { <app-accordion [block]="block" [soft]="soft" /> }
-      @case ('testimonials') { <app-testimonials [block]="block" [soft]="soft" /> }
-      @case ('logo_wall') { <app-logo-wall [block]="block" [soft]="soft" /> }
-      @case ('news_list') { <app-news-list [block]="block" [soft]="soft" /> }
-      @case ('project_list') { <app-project-list [block]="block" [soft]="soft" /> }
-      @case ('partner_list') { <app-partner-list [block]="block" [soft]="soft" /> }
-      @case ('cta') { <app-cta [block]="block" /> }
-      @case ('contact_form') { <app-contact-form [block]="block" [soft]="soft" /> }
-      @case ('contact_info') { <app-contact-info [block]="block" [soft]="soft" /> }
+      @case ('hero') {
+        <app-hero [block]="block" />
+      }
+      @case ('page_hero') {
+        <app-page-hero [block]="block" />
+      }
+      @case ('stats') {
+        <app-stats [block]="block" />
+      }
+      @case ('cards') {
+        <app-cards [block]="block" [soft]="soft" />
+      }
+      @case ('richtext') {
+        <app-richtext [block]="block" [soft]="soft" />
+      }
+      @case ('timeline') {
+        <app-timeline [block]="block" [soft]="soft" />
+      }
+      @case ('accordion') {
+        <app-accordion [block]="block" [soft]="soft" />
+      }
+      @case ('testimonials') {
+        <app-testimonials [block]="block" [soft]="soft" />
+      }
+      @case ('logo_wall') {
+        <app-logo-wall [block]="block" [soft]="soft" />
+      }
+      @case ('news_list') {
+        <app-news-list [block]="block" [soft]="soft" />
+      }
+      @case ('project_list') {
+        <app-project-list [block]="block" [soft]="soft" />
+      }
+      @case ('partner_list') {
+        <app-partner-list [block]="block" [soft]="soft" />
+      }
+      @case ('cta') {
+        <app-cta [block]="block" />
+      }
+      @case ('contact_form') {
+        <app-contact-form [block]="block" [soft]="soft" />
+      }
+      @case ('contact_info') {
+        <app-contact-info [block]="block" [soft]="soft" />
+      }
     }
   `,
 })
