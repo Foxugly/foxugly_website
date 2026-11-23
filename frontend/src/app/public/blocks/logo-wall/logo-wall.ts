@@ -1,20 +1,27 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 
 import { Block } from '../../../core/models';
 
 @Component({
   selector: 'app-logo-wall',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="block" [class.soft]="soft" [id]="block.anchor || null">
       <div class="wrap">
         @if (c.title || c.eyebrow) {
           <div class="block-head text-center">
-            @if (c.eyebrow) { <span class="eyebrow">{{ c.eyebrow }}</span> }
-            @if (c.title) { <h2 class="section-title">{{ c.title }}</h2> }
+            @if (c.eyebrow) {
+              <span class="eyebrow">{{ c.eyebrow }}</span>
+            }
+            @if (c.title) {
+              <h2 class="section-title">{{ c.title }}</h2>
+            }
           </div>
         }
         <div class="logo-wall">
-          @for (item of c.items; track $index) { <div class="logo-chip">{{ item.label }}</div> }
+          @for (item of c.items; track $index) {
+            <div class="logo-chip">{{ item.label }}</div>
+          }
         </div>
       </div>
     </section>
@@ -23,5 +30,7 @@ import { Block } from '../../../core/models';
 export class LogoWall {
   @Input({ required: true }) block!: Block;
   @Input() soft = false;
-  get c() { return this.block.content; }
+  get c() {
+    return this.block.content;
+  }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
@@ -9,12 +9,17 @@ import { Footer } from './layout/footer/footer';
   selector: 'app-root',
   imports: [RouterOutlet, Navbar, Footer],
   template: `
-    @if (!isAdmin()) { <app-navbar /> }
+    @if (!isAdmin()) {
+      <app-navbar />
+    }
     <main>
       <router-outlet />
     </main>
-    @if (!isAdmin()) { <app-footer /> }
+    @if (!isAdmin()) {
+      <app-footer />
+    }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.scss',
 })
 export class App {
@@ -23,7 +28,9 @@ export class App {
 
   constructor() {
     this.router.events
-      .pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe(e => this.isAdmin.set((e as NavigationEnd).urlAfterRedirects.startsWith('/admin')));
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe((e) =>
+        this.isAdmin.set((e as NavigationEnd).urlAfterRedirects.startsWith('/admin')),
+      );
   }
 }
