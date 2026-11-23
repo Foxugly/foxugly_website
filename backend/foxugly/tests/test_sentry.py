@@ -331,3 +331,73 @@ class ScrubThirdReviewTests(SimpleTestCase):
 
         event = scrub_event({"extra": {"o": Opaque()}}, {})
         self.assertNotIn(SECRET, json.dumps(event))
+
+
+# --- Every event field, one planted token: it must appear nowhere.
+
+
+def _planted_event(token: str) -> dict:
+    url = "https://u:" + token + "@h.invalid/reset/" + token + "/?k=" + token
+    return {
+        "request": {
+            "url": url,
+            "query_string": ["token=" + token, token.encode()],
+            "headers": {"Authorization": token, "X-Custom": "id " + token},
+            "cookies": {"sessionid": token},
+            "data": {"password": token, "note": "see " + token},
+            "env": {"REMOTE_ADDR": token, "SERVER_NAME": "h " + token},
+        },
+        "message": "failed for " + token,
+        "logentry": {
+            "message": "failed for %s " + token,
+            "formatted": "failed for " + token,
+            "params": [token, {"token": token}],
+        },
+        "exception": {
+            "values": [
+                {
+                    "type": "Err" + token,
+                    "value": "bad token " + token,
+                    "stacktrace": {"frames": [{"vars": {"x": token, "token": token}}]},
+                }
+            ]
+        },
+        "threads": {
+            "values": [
+                {
+                    "value": token,
+                    "type": token,
+                    "stacktrace": {"frames": [{"vars": {"y": [token]}}]},
+                }
+            ]
+        },
+        "breadcrumbs": {
+            "values": [{"message": "GET " + url, "data": {"url": url, "x": token}}]
+        },
+        "extra": {"x": token, "nested": {"deep": (token,)}},
+        "tags": {"t": token, "token": token},
+        "contexts": {"trace": {"data": {"u": url}}, "response": {"headers": [token]}},
+        "user": {"id": token, "ip_address": token, "email": "e " + token},
+        "transaction": "/reset/" + token + "/",
+        "culprit": "view " + token,
+        "spans": [
+            {"description": "GET " + url, "data": {"x": token}},
+            {"name": "q " + token, "attributes": {"a": token}},
+        ],
+    }
+
+
+class EveryFieldTests(SimpleTestCase):
+    def test_a_token_planted_in_every_event_field_appears_nowhere(self):
+        event = scrub_event(_planted_event(SECRET), {})
+        self.assertNotIn(SECRET, json.dumps(event, default=repr))
+
+    def test_a_token_in_a_span_name_or_attribute_appears_nowhere(self):
+        span = scrub_span(
+            {
+                "name": "GET /x/" + SECRET,
+                "attributes": {"a": SECRET, "b": [SECRET], "url.full": "h?" + SECRET},
+            },
+            {},
+        )
+        self.assertNotIn(SECRET, json.dumps(span))
