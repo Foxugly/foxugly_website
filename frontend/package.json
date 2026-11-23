@@ -20,7 +20,7 @@
     "@angular/forms": "^22.3.0",
     "@angular/platform-browser": "^22.3.0",
     "@angular/router": "^22.3.0",
-    "@sentry/browser": "^11.16.0",
+    "@sentry/browser": "^11.17.0",
     "grapesjs": "^0.23.9",
     "quill": "^2.0.3",
     "rxjs": "~7.8.0",
