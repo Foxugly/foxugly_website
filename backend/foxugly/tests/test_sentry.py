@@ -232,3 +232,60 @@ class ScrubSecurityReviewTests(SimpleTestCase):
         # adds one, it must resolve to "off".
         headers = client.options["data_collection"]["http_headers"]
         self.assertEqual(headers.get("response", {"mode": "off"})["mode"], "off")
+
+
+class ScrubSecondReviewTests(SimpleTestCase):
+    """Exception values, query and fragment, userinfo, fail closed."""
+
+    jwt = ScrubSecurityReviewTests.jwt
+
+    def test_exception_and_thread_values_are_scrubbed(self):
+        event = scrub_event(
+            {
+                "exception": {
+                    "values": [{"value": "GET https://h.invalid/x?token=" + SECRET}]
+                },
+                "threads": {"values": [{"value": "retry with api_key=" + SECRET}]},
+            },
+            {},
+        )
+        self.assertNotIn(SECRET, json.dumps(event))
+
+    def test_query_and_fragment_values_are_masked(self):
+        url = "https://h.invalid/cb?page=2&ticket=t&sig=AbCdEfGhIjKlMnOp#access_token=x"
+        self.assertEqual(
+            scrub_text(url),
+            "https://h.invalid/cb?page=2&ticket=[Filtered]&sig=[Filtered]#[Filtered]",
+        )
+        self.assertEqual(
+            scrub_text("next=/a&code=0123456789abcdef"), "next=/a&code=[Filtered]"
+        )
+        event = scrub_event({"request": {"query_string": "page=2&k=" + self.jwt}}, {})
+        self.assertEqual(event["request"]["query_string"], "page=2&k=[Filtered]")
+
+    def test_userinfo_is_stripped_robustly(self):
+        self.assertEqual(scrub_text("https://u:pa@ss@h.invalid/"), "https://h.invalid/")
+        self.assertEqual(scrub_text("https://u:p/w@h.invalid/x"), "https://h.invalid/x")
+        self.assertEqual(
+            scrub_text("https://user:" + SECRET + "/x"), "https://[Filtered]/x"
+        )
+        self.assertEqual(
+            scrub_text("https://h.invalid:8443/a"), "https://h.invalid:8443/a"
+        )
+        self.assertEqual(scrub_text("http://[::1]:8000/a"), "http://[::1]:8000/a")
+
+    def test_scrubbing_fails_closed(self):
+        deep = SECRET
+        for _ in range(30):
+            deep = [deep]
+        event = scrub_event(
+            {
+                "extra": {
+                    "t": ("a?token=" + SECRET,),
+                    "s": {"x?password=" + SECRET},
+                    "d": deep,
+                }
+            },
+            {},
+        )
+        self.assertNotIn(SECRET, json.dumps(event))
