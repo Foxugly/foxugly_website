@@ -22,7 +22,7 @@ export const appConfig: ApplicationConfig = {
     ),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
     { provide: ErrorHandler, useClass: SentryErrorHandler },
-    // PrimeNG (thème Aura, animations) n'est configuré que par les routes admin
+    // Optimus UI (thème Aura, animations) n'est configuré que par les routes admin
     // (admin.routes.ts) : il reste hors du bundle initial du site public.
   ],
 };

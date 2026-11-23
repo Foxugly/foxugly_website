@@ -1,8 +1,8 @@
 import { inject, provideEnvironmentInitializer } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { Routes } from '@angular/router';
-import Aura from '@primeuix/themes/aura';
-import { PrimeNG } from 'primeng/config';
+import Aura from '@openng/optimus-ui-themes/aura';
+import { Optimus } from '@openng/optimus-ui/config';
 
 import { loadAdminStyles } from './admin-styles';
 
@@ -18,18 +18,18 @@ import { CollectionEditor } from './collections/collection-editor';
 import { SettingsEditor } from './settings/settings-editor';
 
 /**
- * PrimeNG n'est utilisé que dans l'admin : thème et animations sont fournis ici,
+ * Optimus UI (fork MIT de PrimeNG 21) n'est utilisé que dans l'admin : thème et animations sont fournis ici,
  * dans le chunk admin chargé à la demande, plutôt que dans app.config.ts.
- * `providePrimeNG()` passe par un app initializer, qui ne s'exécute pas dans un
- * injecteur de route : on configure donc directement le service (root) PrimeNG.
- * cssLayer : les styles PrimeNG restent dans une couche basse → ne surchargent
+ * `provideOptimus()` passe par un app initializer, qui ne s'exécute pas dans un
+ * injecteur de route : on configure donc directement le service (root) Optimus.
+ * cssLayer : les styles Optimus UI restent dans une couche basse → ne surchargent
  * pas la charte.
  */
 const ADMIN_PROVIDERS = [
   provideAnimationsAsync(),
   provideEnvironmentInitializer(() => {
-    inject(PrimeNG).setConfig({
-      theme: { preset: Aura, options: { darkModeSelector: false, cssLayer: { name: 'primeng' } } },
+    inject(Optimus).setConfig({
+      theme: { preset: Aura, options: { darkModeSelector: false, cssLayer: { name: 'optimus' } } },
     });
     loadAdminStyles();
   }),

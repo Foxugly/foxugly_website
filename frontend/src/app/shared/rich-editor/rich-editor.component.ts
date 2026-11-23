@@ -6,15 +6,15 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { Editor } from 'primeng/editor';
-import { SharedModule } from 'primeng/api';
+import { Editor } from '@openng/optimus-ui/editor';
+import { SharedModule } from '@openng/optimus-ui/api';
 
 // CSS de Quill (thème « snow ») importée ici, dans un composant chargé
 // uniquement par le bundle admin (lazy) → ne fuit pas dans le bundle public.
 /**
  * Éditeur de texte enrichi partagé (admin uniquement).
  *
- * Encapsule `p-editor` (PrimeNG / Quill 2) avec une **toolbar minimale**
+ * Encapsule `p-editor` (Optimus UI / Quill 2) avec une **toolbar minimale**
  * (gras, italique, listes à puces / numérotée, lien). Implémente
  * `ControlValueAccessor` pour fonctionner avec `[(ngModel)]`. La valeur
  * échangée est une chaîne HTML.
@@ -43,7 +43,12 @@ import { SharedModule } from 'primeng/api';
         </span>
         <span class="ql-formats">
           <button type="button" class="ql-list" value="bullet" aria-label="Liste à puces"></button>
-          <button type="button" class="ql-list" value="ordered" aria-label="Liste numérotée"></button>
+          <button
+            type="button"
+            class="ql-list"
+            value="ordered"
+            aria-label="Liste numérotée"
+          ></button>
         </span>
         <span class="ql-formats">
           <button type="button" class="ql-link" aria-label="Lien"></button>

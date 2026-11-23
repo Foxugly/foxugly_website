@@ -1,6 +1,6 @@
 # foxugly.com
 
-Site vitrine de **foxugly** (coaching agile) : API Django REST (`backend/`) et SPA Angular + PrimeNG
+Site vitrine de **foxugly** (coaching agile) : API Django REST (`backend/`) et SPA Angular + Optimus UI (fork MIT de PrimeNG 21)
 (`frontend/`). Tout le contenu est un **page builder** — chaque page est une liste de blocs typés,
 éditables depuis le back-office `/admin/`. En production sur https://foxugly.com.
 
