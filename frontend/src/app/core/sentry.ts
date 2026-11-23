@@ -57,6 +57,10 @@ export function initSentry(): void {
         queues: false,
         graphQL: { document: false, variables: false },
       },
+      // SDK 11 diffuse les spans en flux par défaut, ce qui ignore
+      // `beforeSendTransaction` (avertissement en console) : on garde le cycle
+      // « static » de la v10 pour que le nettoyage ci-dessous s'applique.
+      traceLifecycle: 'static',
       // Transitoire et bénin : un client gardant un onglet périmé après un
       // nouveau déploiement échoue à charger un lazy-chunk renommé. Non
       // actionnable — ne pas le remonter.
