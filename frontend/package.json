@@ -20,7 +20,7 @@
     "@angular/forms": "^22.3.0",
     "@angular/platform-browser": "^22.3.0",
     "@angular/router": "^22.3.0",
-    "@sentry/browser": "^10.78.0",
+    "@sentry/browser": "^11.16.0",
     "grapesjs": "^0.23.9",
     "quill": "^2.0.3",
     "rxjs": "~7.8.0",
@@ -36,13 +36,10 @@
     "@eslint/js": "^10.0.1",
     "angular-eslint": "22.8.0",
     "eslint": "^10.15.0",
-    "jsdom": "^28.0.0",
+    "jsdom": "^31.0.1",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.73.0",
-    "vitest": "^4.1.12"
-  },
-  "overrides": {
-    "minimatch": "^11.0.1"
+    "vitest": "^5.1.1"
   }
 }

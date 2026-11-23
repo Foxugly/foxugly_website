@@ -40,6 +40,23 @@ export function initSentry(): void {
       dsn: SENTRY_DSN,
       environment: SENTRY_ENV,
       release: SENTRY_RELEASE || undefined,
+      // SDK 11 : `sendDefaultPii` a disparu au profit de `dataCollection`, dont
+      // les défauts sont PLUS larges (IP/utilisateur, cookies, corps). On fixe
+      // explicitement la base restrictive de la v10.
+      dataCollection: {
+        userInfo: false,
+        cookies: false,
+        httpHeaders: {
+          request: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+          response: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+        },
+        httpBodies: [],
+        urlQueryParams: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+        genAI: { inputs: false, outputs: false },
+        databaseQueryData: false,
+        queues: false,
+        graphQL: { document: false, variables: false },
+      },
       // Transitoire et bénin : un client gardant un onglet périmé après un
       // nouveau déploiement échoue à charger un lazy-chunk renommé. Non
       // actionnable — ne pas le remonter.
