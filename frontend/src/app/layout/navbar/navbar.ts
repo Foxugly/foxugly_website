@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -7,7 +7,6 @@ import { ContentService } from '../../core/content.service';
 @Component({
   selector: 'app-navbar',
   imports: [AsyncPipe, RouterLink, RouterLinkActive],
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <nav class="nav">
       <div class="wrap nav-inner">
@@ -17,17 +16,11 @@ import { ContentService } from '../../core/content.service';
         </a>
 
         <div class="nav-links" [class.open]="open()">
-          @for (p of pages$ | async; track p.slug) {
-            <a [routerLink]="['/', p.slug]" routerLinkActive="active" (click)="close()">{{
-              p.nav_label || p.title
-            }}</a>
+          @for (p of (pages$ | async); track p.slug) {
+            <a [routerLink]="['/', p.slug]" routerLinkActive="active" (click)="close()">{{ p.nav_label || p.title }}</a>
           }
-          <a routerLink="/contact" class="btn btn-primary nav-cta" (click)="close()"
-            >Me contacter</a
-          >
-          <a routerLink="/admin" routerLinkActive="active" class="nav-admin" (click)="close()"
-            >Admin</a
-          >
+          <a routerLink="/contact" class="btn btn-primary nav-cta" (click)="close()">Me contacter</a>
+          <a routerLink="/admin" routerLinkActive="active" class="nav-admin" (click)="close()">Admin</a>
         </div>
 
         <button class="nav-burger" type="button" aria-label="Menu" (click)="toggle()">☰</button>
@@ -40,10 +33,6 @@ export class Navbar {
   protected pages$ = this.content.navPages();
   protected open = signal(false);
 
-  toggle() {
-    this.open.update((v) => !v);
-  }
-  close() {
-    this.open.set(false);
-  }
+  toggle() { this.open.update(v => !v); }
+  close() { this.open.set(false); }
 }

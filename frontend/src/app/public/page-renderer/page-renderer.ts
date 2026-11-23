@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -24,7 +24,6 @@ const FULL_BLEED = new Set(['hero', 'page_hero', 'cta']);
 @Component({
   selector: 'app-page-renderer',
   imports: [AsyncPipe, BlockRenderer],
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @if (state$ | async; as s) {
       @switch (s.status) {
@@ -32,12 +31,10 @@ const FULL_BLEED = new Set(['hero', 'page_hero', 'cta']);
           <div class="loading-state"><div class="wrap">Chargement…</div></div>
         }
         @case ('error') {
-          <div class="error-state">
-            <div class="wrap">
-              <h2>Page introuvable</h2>
-              <p>Cette page n'existe pas ou n'est pas encore publiée.</p>
-            </div>
-          </div>
+          <div class="error-state"><div class="wrap">
+            <h2>Page introuvable</h2>
+            <p>Cette page n'existe pas ou n'est pas encore publiée.</p>
+          </div></div>
         }
         @case ('ok') {
           @for (rb of s.blocks; track rb.block.id) {
@@ -54,10 +51,10 @@ export class PageRenderer {
   private title = inject(Title);
 
   protected state$: Observable<State> = this.route.paramMap.pipe(
-    map((pm) => pm.get('slug') ?? 'accueil'),
-    switchMap((slug) =>
+    map(pm => pm.get('slug') ?? 'accueil'),
+    switchMap(slug =>
       this.content.page(slug).pipe(
-        tap((page) => this.title.setTitle(`${page.seo_title || page.title} — foxugly`)),
+        tap(page => this.title.setTitle(`${page.seo_title || page.title} — foxugly`)),
         map((page): State => ({ status: 'ok', page, blocks: this.decorate(page.blocks) })),
         catchError(() => of<State>({ status: 'error' })),
       ),
@@ -67,7 +64,7 @@ export class PageRenderer {
   /** Alterne fond clair/gris parmi les blocs « de section ». */
   private decorate(blocks: Block[]): RenderedBlock[] {
     let n = 0;
-    return blocks.map((block) => {
+    return blocks.map(block => {
       if (FULL_BLEED.has(block.block_type)) return { block, soft: false };
       const soft = n % 2 === 1;
       n++;

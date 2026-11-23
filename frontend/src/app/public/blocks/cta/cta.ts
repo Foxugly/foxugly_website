@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 import { Block } from '../../../core/models';
 import { LinkBtn } from '../../link-btn/link-btn';
@@ -6,15 +6,12 @@ import { LinkBtn } from '../../link-btn/link-btn';
 @Component({
   selector: 'app-cta',
   imports: [LinkBtn],
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="block" [id]="block.anchor || null">
       <div class="wrap">
         <div class="cta">
           <h2>{{ c.title }}</h2>
-          @if (c.text) {
-            <div class="rich" [innerHTML]="c.text"></div>
-          }
+          @if (c.text) { <div class="rich" [innerHTML]="c.text"></div> }
           @if (c.cta) {
             <app-link-btn [href]="c.cta.href" [label]="c.cta.label" cssClass="btn btn-ghost" />
           }
@@ -25,7 +22,5 @@ import { LinkBtn } from '../../link-btn/link-btn';
 })
 export class Cta {
   @Input({ required: true }) block!: Block;
-  get c() {
-    return this.block.content;
-  }
+  get c() { return this.block.content; }
 }

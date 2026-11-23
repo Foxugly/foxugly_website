@@ -1,4 +1,4 @@
-import { Component, Input, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { Block } from '../../../core/models';
@@ -12,18 +12,13 @@ type FieldErrors = { name?: string; email?: string; message?: string };
 @Component({
   selector: 'app-contact-form',
   imports: [FormsModule],
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="block" [class.soft]="soft" [id]="block.anchor || null">
       <div class="wrap">
         <div class="block-head text-center">
-          @if (c.eyebrow) {
-            <span class="eyebrow">{{ c.eyebrow }}</span>
-          }
+          @if (c.eyebrow) { <span class="eyebrow">{{ c.eyebrow }}</span> }
           <h2 class="section-title">{{ c.title || 'Me contacter' }}</h2>
-          @if (c.lead) {
-            <div class="section-lead center-block rich" [innerHTML]="c.lead"></div>
-          }
+          @if (c.lead) { <div class="section-lead center-block rich" [innerHTML]="c.lead"></div> }
         </div>
 
         @if (sent()) {
@@ -36,34 +31,17 @@ type FieldErrors = { name?: string; email?: string; message?: string };
           <form class="form-card" novalidate (ngSubmit)="submit()">
             <div class="field">
               <label for="cf-name">Nom</label>
-              <input
-                id="cf-name"
-                name="name"
-                [(ngModel)]="model.name"
-                (ngModelChange)="clear('name')"
-                autocomplete="name"
-                [attr.aria-invalid]="!!errors().name"
-                [attr.aria-describedby]="errors().name ? 'cf-name-err' : null"
-              />
-              @if (errors().name) {
-                <span id="cf-name-err" class="field-error">{{ errors().name }}</span>
-              }
+              <input id="cf-name" name="name" [(ngModel)]="model.name" (ngModelChange)="clear('name')"
+                     autocomplete="name" [attr.aria-invalid]="!!errors().name"
+                     [attr.aria-describedby]="errors().name ? 'cf-name-err' : null" />
+              @if (errors().name) { <span id="cf-name-err" class="field-error">{{ errors().name }}</span> }
             </div>
             <div class="field">
               <label for="cf-email">Email</label>
-              <input
-                id="cf-email"
-                name="email"
-                type="email"
-                [(ngModel)]="model.email"
-                (ngModelChange)="clear('email')"
-                autocomplete="email"
-                [attr.aria-invalid]="!!errors().email"
-                [attr.aria-describedby]="errors().email ? 'cf-email-err' : null"
-              />
-              @if (errors().email) {
-                <span id="cf-email-err" class="field-error">{{ errors().email }}</span>
-              }
+              <input id="cf-email" name="email" type="email" [(ngModel)]="model.email" (ngModelChange)="clear('email')"
+                     autocomplete="email" [attr.aria-invalid]="!!errors().email"
+                     [attr.aria-describedby]="errors().email ? 'cf-email-err' : null" />
+              @if (errors().email) { <span id="cf-email-err" class="field-error">{{ errors().email }}</span> }
             </div>
             <div class="field">
               <label for="cf-subject">Sujet (optionnel)</label>
@@ -72,46 +50,23 @@ type FieldErrors = { name?: string; email?: string; message?: string };
 
             <!-- Honeypot anti-spam : masqué et hors tabulation ; un humain ne le
                  remplit jamais. S'il est rempli, le backend ignore le message. -->
-            <div
-              aria-hidden="true"
-              style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;"
-            >
+            <div aria-hidden="true" style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;">
               <label for="cf-website">Ne pas remplir</label>
-              <input
-                id="cf-website"
-                name="website"
-                type="text"
-                tabindex="-1"
-                autocomplete="off"
-                [(ngModel)]="model.website"
-              />
+              <input id="cf-website" name="website" type="text" tabindex="-1"
+                     autocomplete="off" [(ngModel)]="model.website" />
             </div>
             <div class="field">
               <label for="cf-message">Message</label>
-              <textarea
-                id="cf-message"
-                name="message"
-                rows="5"
-                [(ngModel)]="model.message"
-                (ngModelChange)="clear('message')"
-                [attr.aria-invalid]="!!errors().message"
-                [attr.aria-describedby]="errors().message ? 'cf-message-err' : null"
-              ></textarea>
-              @if (errors().message) {
-                <span id="cf-message-err" class="field-error">{{ errors().message }}</span>
-              }
+              <textarea id="cf-message" name="message" rows="5" [(ngModel)]="model.message" (ngModelChange)="clear('message')"
+                        [attr.aria-invalid]="!!errors().message"
+                        [attr.aria-describedby]="errors().message ? 'cf-message-err' : null"></textarea>
+              @if (errors().message) { <span id="cf-message-err" class="field-error">{{ errors().message }}</span> }
             </div>
 
-            @if (error()) {
-              <p class="form-error" role="alert">{{ error() }}</p>
-            }
+            @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
 
-            <button
-              type="submit"
-              class="btn btn-primary"
-              style="width:100%; justify-content:center;"
-              [disabled]="loading()"
-            >
+            <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;"
+                    [disabled]="loading()">
               {{ loading() ? 'Envoi…' : 'Envoyer le message' }}
             </button>
           </form>
@@ -124,9 +79,7 @@ export class ContactForm {
   @Input({ required: true }) block!: Block;
   @Input() soft = false;
   private content = inject(ContentService);
-  get c() {
-    return this.block.content ?? {};
-  }
+  get c() { return this.block.content ?? {}; }
 
   protected model = { name: '', email: '', subject: '', message: '', website: '' };
   protected loading = signal(false);
@@ -137,7 +90,7 @@ export class ContactForm {
 
   /** Efface l'erreur d'un champ dès que l'utilisateur le corrige. */
   clear(field: keyof FieldErrors) {
-    if (this.errors()[field]) this.errors.update((e) => ({ ...e, [field]: undefined }));
+    if (this.errors()[field]) this.errors.update(e => ({ ...e, [field]: undefined }));
   }
 
   private validate(): FieldErrors {
@@ -157,10 +110,7 @@ export class ContactForm {
     this.error.set('');
     this.loading.set(true);
     this.content.sendContact(this.model).subscribe({
-      next: (r) => {
-        this.confirmation.set(r.detail);
-        this.sent.set(true);
-      },
+      next: (r) => { this.confirmation.set(r.detail); this.sent.set(true); },
       error: () => {
         this.error.set('Envoi impossible pour le moment. Réessaie ou écris directement par email.');
         this.loading.set(false);

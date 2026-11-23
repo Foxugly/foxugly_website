@@ -104,10 +104,7 @@ et donc le back-office Angular ne changent pas (`content/test_admin_2fa_api_unch
 
 ## Frontend (Angular + Optimus UI) — construit
 
-**Angular 22** (TypeScript 6.0 ; la migration v22 a mis `ChangeDetectionStrategy.Eager` explicite sur les
-composants pour garder le comportement d'avant — nouveaux composants en `OnPush`, d'où la règle ESLint
-`prefer-on-push-component-change-detection` désactivée). **Bibliothèque UI : Optimus UI 2.x**
-(`@openng/optimus-ui`, MIT ; 2.x = Angular 22, 1.x = Angular 21) depuis le 2026-11-23 — fork communautaire
+**Bibliothèque UI : Optimus UI** (`@openng/optimus-ui`, MIT) depuis le 2026-11-23 — fork communautaire
 de PrimeNG 21 (mêmes composants, sélecteurs et API ; `Optimus` ex-`PrimeNG`), thème Aura via
 `@openng/optimus-ui-themes`, icônes `pi pi-*` via `@openng/icons`. Admin uniquement : thème et icônes
 sont chargés par les routes admin (`admin.routes.ts`, bundle `admin-icons`). **PrimeNG ≥ 22 est interdit
