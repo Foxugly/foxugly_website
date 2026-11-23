@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth.service';
@@ -23,11 +23,21 @@ import { AuthService } from '../../core/auth.service';
       </div>
     </div>
   `,
-  styles: [`
-    .admin-login { min-height: 100vh; display: grid; place-items: center; padding: 2rem;
-      background: linear-gradient(160deg, #1b1a30 0%, #2a2942 100%); }
-    .admin-login .form-card { width: min(420px, 100%); }
-  `],
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styles: [
+    `
+      .admin-login {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+        background: linear-gradient(160deg, #1b1a30 0%, #2a2942 100%);
+      }
+      .admin-login .form-card {
+        width: min(420px, 100%);
+      }
+    `,
+  ],
 })
 export class MagicLogin {
   private route = inject(ActivatedRoute);

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, Input, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Observable } from 'rxjs';
 
@@ -8,6 +8,7 @@ import { ContentService } from '../../../core/content.service';
 @Component({
   selector: 'app-testimonials',
   imports: [AsyncPipe],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="block" [class.soft]="soft" [id]="block.anchor || null">
       <div class="wrap">
@@ -16,13 +17,16 @@ import { ContentService } from '../../../core/content.service';
           <h2 class="section-title">Ils en parlent mieux que moi</h2>
         </div>
         <div class="grid grid-2">
-          @for (t of (items$ | async); track t.id) {
+          @for (t of items$ | async; track t.id) {
             <div class="quote-card">
               <div class="mark">“</div>
               <div class="rich" [innerHTML]="t.quote"></div>
               <div class="quote-author">
                 <div class="avatar">{{ t.initials }}</div>
-                <div><strong>{{ t.author }}</strong><small>{{ t.role }}</small></div>
+                <div>
+                  <strong>{{ t.author }}</strong
+                  ><small>{{ t.role }}</small>
+                </div>
               </div>
             </div>
           }
@@ -36,7 +40,11 @@ export class Testimonials implements OnInit {
   @Input() soft = false;
   private content = inject(ContentService);
   protected items$!: Observable<Testimonial[]>;
-  get c() { return this.block.content; }
+  get c() {
+    return this.block.content;
+  }
 
-  ngOnInit() { this.items$ = this.content.testimonials(this.c.limit || undefined); }
+  ngOnInit() {
+    this.items$ = this.content.testimonials(this.c.limit || undefined);
+  }
 }
