@@ -4,8 +4,8 @@ django-cors-headers>=4.9.0
 Pillow>=13.0.0
 gunicorn>=27.0.1
 whitenoise>=6.12.0
-sentry-sdk[django]>=2.75.0
+sentry-sdk[django]>=2.76.0
 psycopg[binary]>=3.3.9   # requis seulement si DB_ENGINE=postgresql
-redis>=8.1.0
+redis>=8.2.0
 django-otp>=1.7.5     # 2FA TOTP de l'admin Django (app admin_2fa)
 qrcode>=8.2           # QR code SVG de l'enrolement 2FA (sans Pillow)

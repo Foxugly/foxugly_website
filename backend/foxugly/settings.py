@@ -292,11 +292,18 @@ _SENTRY_ENV_IS_PROD = SENTRY_ENVIRONMENT.upper() in {"PROD", "PRODUCTION"}
 if SENTRY_DSN and _SENTRY_ENV_IS_PROD:
     import sentry_sdk
 
+    # Underscored: module-level upper-case names would become Django settings.
+    from foxugly.sentry import DATA_COLLECTION as _SENTRY_DATA_COLLECTION
+    from foxugly.sentry import scrub_event as _sentry_scrub_event
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
         release=_sentry_release(),
         # Tracing désactivé par défaut (0.0) ; monter si besoin de perf monitoring.
         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
-        send_default_pii=False,
+        # Ni PII, ni cookies, ni corps de requête : voir foxugly/sentry.py.
+        data_collection=_SENTRY_DATA_COLLECTION,
+        before_send=_sentry_scrub_event,
+        before_send_transaction=_sentry_scrub_event,
     )
