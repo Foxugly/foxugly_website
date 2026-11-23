@@ -1,7 +1,7 @@
 import { inject, provideEnvironmentInitializer } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { Routes } from '@angular/router';
-import Aura from '@primeng/themes/aura';
+import Aura from '@primeuix/themes/aura';
 import { PrimeNG } from 'primeng/config';
 
 import { loadAdminStyles } from './admin-styles';
