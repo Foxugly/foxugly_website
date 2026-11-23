@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -88,6 +88,7 @@ const CONFIGS: Record<CollectionName, ColConfig> = {
 @Component({
   selector: 'app-admin-collection-editor',
   imports: [FormsModule, FileUpload, RichEditorComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="admin-head">
       <div>

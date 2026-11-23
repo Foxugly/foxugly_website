@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthService } from '../../core/auth.service';
@@ -6,12 +6,15 @@ import { AuthService } from '../../core/auth.service';
 @Component({
   selector: 'app-admin-shell',
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="admin">
       <aside class="admin-sidebar">
         <a routerLink="/accueil" class="brand" style="margin-bottom:1.6rem;">
           <img src="assets/logo-white.svg" alt="foxugly" />
-          <span><span class="fox" style="color:#fff;">fox</span><span class="ugly">ugly</span></span>
+          <span
+            ><span class="fox" style="color:#fff;">fox</span><span class="ugly">ugly</span></span
+          >
         </a>
 
         <nav class="admin-nav">
