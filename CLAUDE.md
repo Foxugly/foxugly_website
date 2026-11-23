@@ -1,7 +1,7 @@
 # foxugly — site web
 
 Site de **foxugly**, cabinet de **coaching agile indépendant** (une seule personne :
-Renaud Vilain). Stack : **Django REST** (backend) + **Angular / PrimeNG** (frontend).
+Renaud Vilain). Stack : **Django REST** (backend) + **Angular / Optimus UI** (frontend).
 Les deux sont **construits, testés et déployés** (CI GitHub Actions → AWS EC2).
 
 ## Structure du dépôt
@@ -14,7 +14,7 @@ foxugly website/
 │   ├── style.css  ← tokens couleurs, composants (source de la charte)
 │   └── assets/    logo.svg, logo-white.svg, favicon.ico
 ├── backend/       Django + DRF — API REST (voir backend/README.md)
-├── frontend/      Angular + PrimeNG — site public + back-office admin
+├── frontend/      Angular + Optimus UI — site public + back-office admin
 ├── e2e/           Tests Playwright (public, admin, contact)
 └── deploy/        Units systemd, nginx, scripts AWS (voir DEPLOY.md)
 ```
@@ -102,7 +102,16 @@ et donc le back-office Angular ne changent pas (`content/test_admin_2fa_api_unch
 - **Secrets** : ne jamais logger ni envoyer à Sentry la clé TOTP, le QR ou un code de secours (les
   vues les gardent dans des `Redacted`, le champ s'appelle `token`, nettoyé par Sentry).
 
-## Frontend (Angular + PrimeNG) — construit
+## Frontend (Angular + Optimus UI) — construit
+
+**Bibliothèque UI : Optimus UI** (`@openng/optimus-ui`, MIT) depuis le 2026-11-23 — fork communautaire
+de PrimeNG 21 (mêmes composants, sélecteurs et API ; `Optimus` ex-`PrimeNG`), thème Aura via
+`@openng/optimus-ui-themes`, icônes `pi pi-*` via `@openng/icons`. Admin uniquement : thème et icônes
+sont chargés par les routes admin (`admin.routes.ts`, bundle `admin-icons`). **PrimeNG ≥ 22 est interdit
+dans la flotte** (licence commerciale) — voir foxugly-ops `STANDARD-frontend-layout.md` « Bibliothèque UI ».
+Les polices d'icônes sont émises sous `/media-assets/` (`angular.json` `outputPath.media`, pour ne pas
+entrer en collision avec le `/media/` Django) ; le vhost les sert en cache immuable
+(`location ~ ^/media-assets/openng-icons-…`).
 
 Implémenté et conforme à la maquette. Repères pour intervenir :
 

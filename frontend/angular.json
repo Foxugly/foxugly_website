@@ -36,7 +36,7 @@
             ],
             "styles": [
               "src/styles.scss",
-              { "input": "node_modules/primeicons/primeicons.css", "bundleName": "admin-icons", "inject": false },
+              { "input": "node_modules/@openng/icons/openng-icons.css", "bundleName": "admin-icons", "inject": false },
               { "input": "node_modules/grapesjs/dist/css/grapes.min.css", "bundleName": "admin-grapes", "inject": false },
               { "input": "node_modules/quill/dist/quill.snow.css", "bundleName": "admin-quill", "inject": false }
             ]
