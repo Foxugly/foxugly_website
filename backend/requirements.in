@@ -4,8 +4,7 @@ django-cors-headers>=4.9.0
 Pillow>=13.0.0
 gunicorn>=27.0.1
 whitenoise>=6.12.0
-# hold: sentry-sdk 3.0 is a day-0 major (2026-11-23); migrate after it stabilises — revisit 2026-12-07
-sentry-sdk[django]>=2.76,<3
+sentry-sdk>=3.0.0,<4
 psycopg[binary]>=3.3.9   # requis seulement si DB_ENGINE=postgresql
 redis>=8.2.0
 django-otp>=1.7.5     # 2FA TOTP de l'admin Django (app admin_2fa)
