@@ -40,10 +40,6 @@ module.exports = defineConfig([
       '@typescript-eslint/consistent-type-definitions': 'off',
       // @Output() nommé comme un événement DOM : interdit (masque l'événement natif).
       '@angular-eslint/no-output-native': 'error',
-      // Angular 22 : OnPush par défaut. La migration v22 a gardé le comportement
-      // d'avant (ChangeDetectionStrategy.Eager explicite sur les 31 composants) ;
-      // on la conserve et on passe les composants en OnPush progressivement.
-      '@angular-eslint/prefer-on-push-component-change-detection': 'off',
     },
   },
   {

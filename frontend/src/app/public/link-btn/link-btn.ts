@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 /**
@@ -11,16 +11,10 @@ import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-link-btn',
   imports: [RouterLink],
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @if (external) {
-      <a
-        [href]="href"
-        [class]="cssClass"
-        [attr.target]="isHttp ? '_blank' : null"
-        [attr.rel]="isHttp ? 'noopener' : null"
-        >{{ label }}</a
-      >
+      <a [href]="href" [class]="cssClass" [attr.target]="isHttp ? '_blank' : null"
+         [attr.rel]="isHttp ? 'noopener' : null">{{ label }}</a>
     } @else {
       <a [routerLink]="path" [fragment]="fragment" [class]="cssClass">{{ label }}</a>
     }
